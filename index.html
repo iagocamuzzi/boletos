@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Boletos</title>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getDatabase, ref, set, push } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC1jX6T23oV_NHTjE_z4ZcWQwop2BWDVxs",
+            authDomain: "boletosvistalinda.firebaseapp.com",
+            projectId: "boletosvistalinda",
+            storageBucket: "boletosvistalinda.appspot.com",
+            messagingSenderId: "809943988538",
+            appId: "1:809943988538:web:4e25ccb03f5c940600f803"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        document.getElementById('formCadastro').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Captura os valores dos inputs
+            const nomeCliente = document.getElementById('nomeCliente').value;
+            const tso = document.getElementById('tso').value;
+            const celular = document.getElementById('celular').value;
+            const valorTotal = parseFloat(document.getElementById('valorTotal').value);
+            const quantidadeParcelas = parseInt(document.getElementById('quantidadeParcelas').value);
+            const vencimento = new Date(document.getElementById('vencimento').value);
+
+            // Calcula o valor de cada parcela
+            const valorParcela = valorTotal / quantidadeParcelas;
+
+            for (let i = 0; i < quantidadeParcelas; i++) {
+                const dataVencimento = new Date(vencimento);
+                dataVencimento.setMonth(vencimento.getMonth() + i);
+
+                // Cria um novo ID para cada boleto
+                const newBoletoKey = push(ref(database, 'boletos')).key;
+
+                const boletoData = {
+                    nomeCliente: nomeCliente,
+                    tso: tso,
+                    celular: celular,
+                    valorParcela: valorParcela.toFixed(2),
+                    vencimento: dataVencimento.toISOString().split('T')[0],
+                    status: 'pendente'
+                };
+
+                // Salva no Firebase
+                set(ref(database, 'boletos/' + newBoletoKey), boletoData);
+            }
+
+            // Limpa o formulário
+            document.getElementById('formCadastro').reset();
+            alert('Venda cadastrada com sucesso!');
+        });
+    </script>
+    <style>
+        /* Seus estilos aqui */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cadastro de Boletos</h1>
+        <form id="formCadastro">
+            <label for="nomeCliente">Nome do Cliente:</label>
+            <input type="text" id="nomeCliente" required>
+
+            <label for="tso">TSO (Número Geral):</label>
+            <input type="text" id="tso" required>
+
+            <label for="celular">Celular:</label>
+            <input type="text" id="celular" placeholder="(99) 99999-9999" required>
+
+            <label for="valorTotal">Valor Total (R$):</label>
+            <input type="number" id="valorTotal" step="0.01" required>
+
+            <label for="quantidadeParcelas">Quantidade de Parcelas:</label>
+            <input type="number" id="quantidadeParcelas" min="1" required>
+
+            <label for="vencimento">Vencimento da Primeira Parcela:</label>
+            <input type="date" id="vencimento" required>
+
+            <button type="submit">Cadastrar Venda</button>
+        </form>
+    </div>
+</body>
+</html>

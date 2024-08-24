@@ -43,22 +43,20 @@
                 row.insertCell(6).innerText = boleto.status.charAt(0).toUpperCase() + boleto.status.slice(1);
                 const acaoCell = row.insertCell(7);
 
-                if (boleto.status === 'pendente') {
-                    const baixarButton = document.createElement('button');
-                    baixarButton.innerText = 'Baixar';
-                    baixarButton.onclick = () => abrirAbaFlutuante(id, boleto.valorParcela);
-                    acaoCell.appendChild(baixarButton);
-                } else {
-                    acaoCell.innerText = 'Pago';
-                }
+                const infoButton = document.createElement('button');
+                infoButton.innerText = 'INFO';
+                infoButton.onclick = () => abrirAbaFlutuante(id, boleto.valorParcela, boleto.valorPago, boleto.dataPagamento);
+                acaoCell.appendChild(infoButton);
             }
         });
 
         // Funções para gerenciar a aba flutuante e a confirmação da baixa
-        window.abrirAbaFlutuante = function(id, valorParcela) {
+        window.abrirAbaFlutuante = function(id, valorParcela, valorPago = '', dataPagamento = '') {
             document.getElementById('abaFlutuante').style.display = 'block';
-            document.getElementById('valorPago').value = valorParcela;
+            document.getElementById('valorPago').value = valorPago || valorParcela;
+            document.getElementById('dataPagamento').value = dataPagamento;
             document.getElementById('idBoleto').value = id;
+            document.getElementById('reabrirParcela').style.display = dataPagamento ? 'block' : 'none';
         };
 
         window.fecharAbaFlutuante = function() {
@@ -77,20 +75,35 @@
 
             update(ref(database), updates).then(() => {
                 alert('Boleto baixado com sucesso!');
-                atualizarLinhaBoleto(id, valorPago, dataPagamento);
+                atualizarLinhaBoleto(id, valorPago, dataPagamento, 'pago');
                 fecharAbaFlutuante();
             });
         };
 
-        function atualizarLinhaBoleto(id, valorPago, dataPagamento) {
+        window.reabrirParcela = function() {
+            const id = document.getElementById('idBoleto').value;
+
+            const updates = {};
+            updates['/boletos/' + id + '/status'] = 'pendente';
+            updates['/boletos/' + id + '/valorPago'] = null;
+            updates['/boletos/' + id + '/dataPagamento'] = null;
+
+            update(ref(database), updates).then(() => {
+                alert('Parcela reaberta com sucesso!');
+                atualizarLinhaBoleto(id, '-', '-', 'pendente');
+                fecharAbaFlutuante();
+            });
+        };
+
+        function atualizarLinhaBoleto(id, valorPago, dataPagamento, status) {
             const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
             const linhas = tabelaBoletos.getElementsByTagName('tr');
 
             for (const linha of linhas) {
                 if (linha.getAttribute('data-id') === id) {
-                    linha.cells[3].innerText = `R$ ${valorPago}`;
-                    linha.cells[5].innerText = dataPagamento;
-                    linha.cells[6].innerText = 'Pago';
+                    linha.cells[3].innerText = valorPago ? `R$ ${valorPago}` : '-';
+                    linha.cells[5].innerText = dataPagamento || '-';
+                    linha.cells[6].innerText = status.charAt(0).toUpperCase() + status.slice(1);
                 }
             }
         }
@@ -130,6 +143,15 @@
             background-color: #45a049;
         }
 
+        #reabrirParcela {
+            background-color: #f44336;
+            margin-top: 10px;
+        }
+
+        #reabrirParcela:hover {
+            background-color: #e53935;
+        }
+
         /* Estilos para o fundo escuro */
         #fundoEscuro {
             display: none;
@@ -165,13 +187,14 @@
 
     <!-- Aba flutuante -->
     <div id="abaFlutuante">
-        <h3>Baixar Boleto</h3>
+        <h3>Gerenciar Boleto</h3>
         <input type="hidden" id="idBoleto">
         <label for="valorPago">Valor Pago:</label>
         <input type="number" id="valorPago" step="0.01" required>
         <label for="dataPagamento">Data do Pagamento:</label>
         <input type="date" id="dataPagamento" required>
         <button onclick="confirmarBaixa()">Confirmar</button>
+        <button id="reabrirParcela" onclick="reabrirParcela()">Reabrir Parcela</button>
         <button onclick="fecharAbaFlutuante()">Cancelar</button>
     </div>
 

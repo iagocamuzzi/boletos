@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boletos Cadastrados</title>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC1jX6T23oV_NHTjE_z4ZcWQwop2BWDVxs",
+            authDomain: "boletosvistalinda.firebaseapp.com",
+            projectId: "boletosvistalinda",
+            storageBucket: "boletosvistalinda.appspot.com",
+            messagingSenderId: "809943988538",
+            appId: "1:809943988538:web:4e25ccb03f5c940600f803"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Carregar boletos do Firebase
+        onValue(ref(database, 'boletos'), (snapshot) => {
+            const boletos = snapshot.val();
+            const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
+            tabelaBoletos.innerHTML = ''; // Limpa a tabela
+
+            for (const id in boletos) {
+                const boleto = boletos[id];
+                const row = tabelaBoletos.insertRow();
+
+                row.insertCell(0).innerText = boleto.nomeCliente;
+                row.insertCell(1).innerText = boleto.tso;
+                row.insertCell(2).innerText = `R$ ${boleto.valorParcela}`;
+                row.insertCell(3).innerText = boleto.vencimento;
+                row.insertCell(4).innerText = boleto.status.charAt(0).toUpperCase() + boleto.status.slice(1);
+                const acaoCell = row.insertCell(5);
+
+                if (boleto.status === 'pendente') {
+                    const baixarButton = document.createElement('button');
+                    baixarButton.innerText = 'Baixar';
+                    baixarButton.onclick = () => baixarBoleto(id);
+                    acaoCell.appendChild(baixarButton);
+                } else {
+                    acaoCell.innerText = 'Pago';
+                }
+            }
+        });
+
+        function baixarBoleto(id) {
+            const updates = {};
+            updates['/boletos/' + id + '/status'] = 'pago';
+            update(ref(database), updates);
+            alert('Boleto baixado com sucesso!');
+        }
+    </script>
+    <style>
+        /* Seus estilos aqui */
+    </style>
+</head>
+<body>
+    <h1>Boletos Cadastrados</h1>
+    <table id="tabelaBoletos">
+        <thead>
+            <tr>
+                <th>Nome do Cliente</th>
+                <th>TSO</th>
+                <th>Valor da Parcela</th>
+                <th>Vencimento</th>
+                <th>Status</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Boletos serão carregados aqui -->
+        </tbody>
+    </table>
+</body>
+</html>

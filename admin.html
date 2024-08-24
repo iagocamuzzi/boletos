@@ -7,7 +7,7 @@
     <script type="module">
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -23,38 +23,52 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // Função para formatar as datas no formato DD/MM/AAAA
+        // Função para formatar a data
         function formatarData(data) {
             const partes = data.split('-');
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
 
-        // Carregar boletos do Firebase
-        onValue(ref(database, 'boletos'), (snapshot) => {
-            const boletos = snapshot.val();
-            const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
-            tabelaBoletos.innerHTML = ''; // Limpa a tabela
+        // Função para carregar boletos
+        function carregarBoletos(filtrarVencidos = false) {
+            onValue(ref(database, 'boletos'), (snapshot) => {
+                const boletos = snapshot.val();
+                const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
+                tabelaBoletos.innerHTML = ''; // Limpa a tabela
 
-            for (const id in boletos) {
-                const boleto = boletos[id];
-                const row = tabelaBoletos.insertRow();
-                row.setAttribute('data-id', id);
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0); // Configura para meia-noite
 
-                row.insertCell(0).innerText = boleto.nomeCliente;
-                row.insertCell(1).innerText = boleto.tso;
-                row.insertCell(2).innerText = `R$ ${boleto.valorParcela}`;
-                row.insertCell(3).innerText = boleto.valorPago ? `R$ ${boleto.valorPago}` : '-';
-                row.insertCell(4).innerText = formatarData(boleto.vencimento);
-                row.insertCell(5).innerText = boleto.dataPagamento ? formatarData(boleto.dataPagamento) : '-';
-                row.insertCell(6).innerText = boleto.status.charAt(0).toUpperCase() + boleto.status.slice(1);
-                const acaoCell = row.insertCell(7);
+                for (const id in boletos) {
+                    const boleto = boletos[id];
+                    const vencimento = new Date(boleto.vencimento);
 
-                const infoButton = document.createElement('button');
-                infoButton.innerText = 'INFO';
-                infoButton.onclick = () => abrirAbaFlutuante(id, boleto.valorParcela, boleto.valorPago, boleto.dataPagamento);
-                acaoCell.appendChild(infoButton);
-            }
-        });
+                    if (filtrarVencidos && vencimento >= hoje) {
+                        continue; // Ignora boletos que não estão vencidos
+                    }
+
+                    const row = tabelaBoletos.insertRow();
+                    row.setAttribute('data-id', id);
+
+                    row.insertCell(0).innerText = boleto.nomeCliente;
+                    row.insertCell(1).innerText = boleto.tso;
+                    row.insertCell(2).innerText = `R$ ${boleto.valorParcela}`;
+                    row.insertCell(3).innerText = boleto.valorPago ? `R$ ${boleto.valorPago}` : '-';
+                    row.insertCell(4).innerText = formatarData(boleto.vencimento);
+                    row.insertCell(5).innerText = boleto.dataPagamento ? formatarData(boleto.dataPagamento) : '-';
+                    row.insertCell(6).innerText = boleto.status.charAt(0).toUpperCase() + boleto.status.slice(1);
+                    const acaoCell = row.insertCell(7);
+
+                    const infoButton = document.createElement('button');
+                    infoButton.innerText = 'INFO';
+                    infoButton.onclick = () => abrirAbaFlutuante(id, boleto.valorParcela, boleto.valorPago, boleto.dataPagamento);
+                    acaoCell.appendChild(infoButton);
+                }
+            });
+        }
+
+        // Carregar todos os boletos ao iniciar a página
+        carregarBoletos();
 
         // Funções para gerenciar a aba flutuante e a confirmação da baixa
         window.abrirAbaFlutuante = function(id, valorParcela, valorPago = '', dataPagamento = '') {
@@ -69,52 +83,59 @@
             document.getElementById('abaFlutuante').style.display = 'none';
         };
 
-        window.confirmarBaixa = function() {
-            const id = document.getElementById('idBoleto').value;
-            const valorPago = document.getElementById('valorPago').value;
-            const dataPagamento = document.getElementById('dataPagamento').value;
-
-            const updates = {};
-            updates['/boletos/' + id + '/status'] = 'pago';
-            updates['/boletos/' + id + '/valorPago'] = valorPago;
-            updates['/boletos/' + id + '/dataPagamento'] = dataPagamento;
-
-            update(ref(database), updates).then(() => {
-                alert('Boleto baixado com sucesso!');
-                atualizarLinhaBoleto(id, valorPago, formatarData(dataPagamento), 'pago');
-                fecharAbaFlutuante();
-            });
+        window.filtrarVencidos = function() {
+            carregarBoletos(true);
         };
-
-        window.reabrirParcela = function() {
-            const id = document.getElementById('idBoleto').value;
-
-            const updates = {};
-            updates['/boletos/' + id + '/status'] = 'pendente';
-            updates['/boletos/' + id + '/valorPago'] = null;
-            updates['/boletos/' + id + '/dataPagamento'] = null;
-
-            update(ref(database), updates).then(() => {
-                alert('Parcela reaberta com sucesso!');
-                atualizarLinhaBoleto(id, '-', '-', 'pendente');
-                fecharAbaFlutuante();
-            });
-        };
-
-        function atualizarLinhaBoleto(id, valorPago, dataPagamento, status) {
-            const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
-            const linhas = tabelaBoletos.getElementsByTagName('tr');
-
-            for (const linha of linhas) {
-                if (linha.getAttribute('data-id') === id) {
-                    linha.cells[3].innerText = valorPago ? `R$ ${valorPago}` : '-';
-                    linha.cells[5].innerText = dataPagamento || '-';
-                    linha.cells[6].innerText = status.charAt(0).toUpperCase() + status.slice(1);
-                }
-            }
-        }
     </script>
     <style>
+        /* Estilos para a página e botões */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #6200ea;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 20px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #3700b3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #6200ea;
+            color: white;
+        }
+
         /* Estilos para a aba flutuante */
         #abaFlutuante {
             display: none;
@@ -127,12 +148,15 @@
             background-color: white;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             z-index: 1000;
+            border-radius: 8px;
         }
 
         #abaFlutuante input {
             width: 100%;
             margin-bottom: 10px;
             padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
             box-sizing: border-box;
         }
 
@@ -143,6 +167,7 @@
             color: white;
             border: none;
             cursor: pointer;
+            border-radius: 4px;
         }
 
         #abaFlutuante button:hover {
@@ -173,6 +198,9 @@
 </head>
 <body>
     <h1>Boletos Cadastrados</h1>
+    <button onclick="carregarBoletos()">Mostrar Todos os Boletos</button>
+    <button onclick="filtrarVencidos()">Mostrar Boletos Vencidos</button>
+
     <table id="tabelaBoletos">
         <thead>
             <tr>

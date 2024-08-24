@@ -23,6 +23,12 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
+        // Função para formatar as datas no formato DD/MM/AAAA
+        function formatarData(data) {
+            const partes = data.split('-');
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+
         // Carregar boletos do Firebase
         onValue(ref(database, 'boletos'), (snapshot) => {
             const boletos = snapshot.val();
@@ -38,8 +44,8 @@
                 row.insertCell(1).innerText = boleto.tso;
                 row.insertCell(2).innerText = `R$ ${boleto.valorParcela}`;
                 row.insertCell(3).innerText = boleto.valorPago ? `R$ ${boleto.valorPago}` : '-';
-                row.insertCell(4).innerText = boleto.vencimento;
-                row.insertCell(5).innerText = boleto.dataPagamento ? boleto.dataPagamento : '-';
+                row.insertCell(4).innerText = formatarData(boleto.vencimento);
+                row.insertCell(5).innerText = boleto.dataPagamento ? formatarData(boleto.dataPagamento) : '-';
                 row.insertCell(6).innerText = boleto.status.charAt(0).toUpperCase() + boleto.status.slice(1);
                 const acaoCell = row.insertCell(7);
 
@@ -75,7 +81,7 @@
 
             update(ref(database), updates).then(() => {
                 alert('Boleto baixado com sucesso!');
-                atualizarLinhaBoleto(id, valorPago, dataPagamento, 'pago');
+                atualizarLinhaBoleto(id, valorPago, formatarData(dataPagamento), 'pago');
                 fecharAbaFlutuante();
             });
         };

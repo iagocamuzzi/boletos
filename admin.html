@@ -43,7 +43,7 @@
                 if (boleto.status === 'pendente') {
                     const baixarButton = document.createElement('button');
                     baixarButton.innerText = 'Baixar';
-                    baixarButton.onclick = () => baixarBoleto(id);
+                    baixarButton.onclick = () => abrirAbaFlutuante(id, boleto.valorParcela);
                     acaoCell.appendChild(baixarButton);
                 } else {
                     acaoCell.innerText = 'Pago';
@@ -51,15 +51,78 @@
             }
         });
 
-        function baixarBoleto(id) {
+        function abrirAbaFlutuante(id, valorParcela) {
+            document.getElementById('abaFlutuante').style.display = 'block';
+            document.getElementById('valorPago').value = valorParcela;
+            document.getElementById('idBoleto').value = id;
+        }
+
+        function fecharAbaFlutuante() {
+            document.getElementById('abaFlutuante').style.display = 'none';
+        }
+
+        function confirmarBaixa() {
+            const id = document.getElementById('idBoleto').value;
+            const valorPago = document.getElementById('valorPago').value;
+            const dataPagamento = document.getElementById('dataPagamento').value;
+
             const updates = {};
             updates['/boletos/' + id + '/status'] = 'pago';
-            update(ref(database), updates);
-            alert('Boleto baixado com sucesso!');
+            updates['/boletos/' + id + '/valorPago'] = valorPago;
+            updates['/boletos/' + id + '/dataPagamento'] = dataPagamento;
+
+            update(ref(database), updates).then(() => {
+                alert('Boleto baixado com sucesso!');
+                fecharAbaFlutuante();
+            });
         }
     </script>
     <style>
-        /* Seus estilos aqui */
+        /* Estilos para a aba flutuante */
+        #abaFlutuante {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        #abaFlutuante input {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        #abaFlutuante button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #abaFlutuante button:hover {
+            background-color: #45a049;
+        }
+
+        /* Estilos para o fundo escuro */
+        #fundoEscuro {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
     </style>
 </head>
 <body>
@@ -79,5 +142,20 @@
             <!-- Boletos serão carregados aqui -->
         </tbody>
     </table>
+
+    <!-- Aba flutuante -->
+    <div id="abaFlutuante">
+        <h3>Baixar Boleto</h3>
+        <input type="hidden" id="idBoleto">
+        <label for="valorPago">Valor Pago:</label>
+        <input type="number" id="valorPago" step="0.01" required>
+        <label for="dataPagamento">Data do Pagamento:</label>
+        <input type="date" id="dataPagamento" required>
+        <button onclick="confirmarBaixa()">Confirmar</button>
+        <button onclick="fecharAbaFlutuante()">Cancelar</button>
+    </div>
+
+    <!-- Fundo escuro -->
+    <div id="fundoEscuro" onclick="fecharAbaFlutuante()"></div>
 </body>
 </html>

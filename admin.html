@@ -51,17 +51,18 @@
             }
         });
 
-        function abrirAbaFlutuante(id, valorParcela) {
+        // Funções para gerenciar a aba flutuante e a confirmação da baixa
+        window.abrirAbaFlutuante = function(id, valorParcela) {
             document.getElementById('abaFlutuante').style.display = 'block';
             document.getElementById('valorPago').value = valorParcela;
             document.getElementById('idBoleto').value = id;
-        }
+        };
 
-        function fecharAbaFlutuante() {
+        window.fecharAbaFlutuante = function() {
             document.getElementById('abaFlutuante').style.display = 'none';
-        }
+        };
 
-        function confirmarBaixa() {
+        window.confirmarBaixa = function() {
             const id = document.getElementById('idBoleto').value;
             const valorPago = document.getElementById('valorPago').value;
             const dataPagamento = document.getElementById('dataPagamento').value;
@@ -75,7 +76,7 @@
                 alert('Boleto baixado com sucesso!');
                 fecharAbaFlutuante();
             });
-        }
+        };
     </script>
     <style>
         /* Estilos para a aba flutuante */

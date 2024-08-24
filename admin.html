@@ -37,9 +37,11 @@
                 row.insertCell(0).innerText = boleto.nomeCliente;
                 row.insertCell(1).innerText = boleto.tso;
                 row.insertCell(2).innerText = `R$ ${boleto.valorParcela}`;
-                row.insertCell(3).innerText = boleto.vencimento;
-                row.insertCell(4).innerText = boleto.status.charAt(0).toUpperCase() + boleto.status.slice(1);
-                const acaoCell = row.insertCell(5);
+                row.insertCell(3).innerText = boleto.valorPago ? `R$ ${boleto.valorPago}` : '-';
+                row.insertCell(4).innerText = boleto.vencimento;
+                row.insertCell(5).innerText = boleto.dataPagamento ? boleto.dataPagamento : '-';
+                row.insertCell(6).innerText = boleto.status.charAt(0).toUpperCase() + boleto.status.slice(1);
+                const acaoCell = row.insertCell(7);
 
                 if (boleto.status === 'pendente') {
                     const baixarButton = document.createElement('button');
@@ -47,7 +49,7 @@
                     baixarButton.onclick = () => abrirAbaFlutuante(id, boleto.valorParcela);
                     acaoCell.appendChild(baixarButton);
                 } else {
-                    acaoCell.innerText = `Pago em: ${boleto.dataPagamento} (R$ ${boleto.valorPago})`;
+                    acaoCell.innerText = 'Pago';
                 }
             }
         });
@@ -86,8 +88,9 @@
 
             for (const linha of linhas) {
                 if (linha.getAttribute('data-id') === id) {
-                    linha.cells[4].innerText = 'Pago';
-                    linha.cells[5].innerText = `Pago em: ${dataPagamento} (R$ ${valorPago})`;
+                    linha.cells[3].innerText = `R$ ${valorPago}`;
+                    linha.cells[5].innerText = dataPagamento;
+                    linha.cells[6].innerText = 'Pago';
                 }
             }
         }
@@ -148,7 +151,9 @@
                 <th>Nome do Cliente</th>
                 <th>TSO</th>
                 <th>Valor da Parcela</th>
+                <th>Valor Pago</th>
                 <th>Vencimento</th>
+                <th>Data de Pagamento</th>
                 <th>Status</th>
                 <th>Ação</th>
             </tr>

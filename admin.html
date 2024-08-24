@@ -32,6 +32,7 @@
             for (const id in boletos) {
                 const boleto = boletos[id];
                 const row = tabelaBoletos.insertRow();
+                row.setAttribute('data-id', id);
 
                 row.insertCell(0).innerText = boleto.nomeCliente;
                 row.insertCell(1).innerText = boleto.tso;
@@ -46,7 +47,7 @@
                     baixarButton.onclick = () => abrirAbaFlutuante(id, boleto.valorParcela);
                     acaoCell.appendChild(baixarButton);
                 } else {
-                    acaoCell.innerText = 'Pago';
+                    acaoCell.innerText = `Pago em: ${boleto.dataPagamento} (R$ ${boleto.valorPago})`;
                 }
             }
         });
@@ -74,9 +75,22 @@
 
             update(ref(database), updates).then(() => {
                 alert('Boleto baixado com sucesso!');
+                atualizarLinhaBoleto(id, valorPago, dataPagamento);
                 fecharAbaFlutuante();
             });
         };
+
+        function atualizarLinhaBoleto(id, valorPago, dataPagamento) {
+            const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
+            const linhas = tabelaBoletos.getElementsByTagName('tr');
+
+            for (const linha of linhas) {
+                if (linha.getAttribute('data-id') === id) {
+                    linha.cells[4].innerText = 'Pago';
+                    linha.cells[5].innerText = `Pago em: ${dataPagamento} (R$ ${valorPago})`;
+                }
+            }
+        }
     </script>
     <style>
         /* Estilos para a aba flutuante */

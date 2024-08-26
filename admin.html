@@ -29,10 +29,15 @@
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
 
-        // Função para enviar SMS
+        // Função para enviar SMS com logs detalhados
         async function enviarSMS(numero, mensagem) {
             const url = 'https://apihttp.disparopro.com.br:8433/mt';
             const token = '32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb';  // Token de autenticação
+
+            console.log("Iniciando envio de SMS...");
+            console.log("URL:", url);
+            console.log("Número:", numero);
+            console.log("Mensagem:", mensagem);
 
             try {
                 const response = await fetch(url, {
@@ -51,6 +56,8 @@
                         }
                     ])
                 });
+
+                console.log("Resposta recebida:", response);
 
                 if (response.ok) {
                     const data = await response.json();

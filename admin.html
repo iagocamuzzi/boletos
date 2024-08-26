@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boletos Cadastrados</title>
     <script type="module">
-        // Import the functions you need from the SDKs you need
+        // Importando as funções necessárias do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
 
-        // Your web app's Firebase configuration
+        // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
             authDomain: "boletosvistalinda.firebaseapp.com",
@@ -19,7 +19,7 @@
             appId: "1:809943988538:web:4e25ccb03f5c940600f803"
         };
 
-        // Initialize Firebase
+        // Inicializando o Firebase
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
@@ -33,7 +33,6 @@
         async function enviarSMS(numero, mensagem) {
             const url = 'https://apihttp.disparopro.com.br:8433/mt';
             const token = '32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb';  // Token de autenticação
-            const parceiroId = '5034e65a0c';  // ID do parceiro
 
             try {
                 const response = await fetch(url, {
@@ -45,10 +44,10 @@
                     body: JSON.stringify([
                         {
                             "numero": numero,          // Número do destinatário com DDI, DDD e número
-                            "servico": "short",        // Tipo de serviço (curto ou longo)
+                            "servico": "short",        // Tipo de serviço (curto)
                             "mensagem": mensagem,      // Texto da mensagem a ser enviada
-                            "parceiro_id": parceiroId, // ID do parceiro fornecido pela API
-                            "codificacao": "0"         // Codificação da mensagem (0 para sem codificação)
+                            "parceiro_id": "5034e65a0c", // ID do parceiro fornecido pela API
+                            "codificacao": "0"         // Codificação da mensagem (0 para 7-bits)
                         }
                     ])
                 });

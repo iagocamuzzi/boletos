@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boletos Cadastrados</title>
     <script type="module">
-        // Importando as funções necessárias do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
 
-        // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
             authDomain: "boletosvistalinda.firebaseapp.com",
@@ -19,20 +17,17 @@
             appId: "1:809943988538:web:4e25ccb03f5c940600f803"
         };
 
-        // Inicializando o Firebase
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // Função para formatar a data
         function formatarData(data) {
             const partes = data.split('-');
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
 
-        // Função para enviar SMS com logs detalhados
         async function enviarSMS(numero, mensagem) {
             const url = 'https://apihttp.disparopro.com.br:8433/mt';
-            const token = '32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb';  // Token de autenticação
+            const token = '32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb';
 
             console.log("Iniciando envio de SMS...");
             console.log("URL:", url);
@@ -48,11 +43,11 @@
                     },
                     body: JSON.stringify([
                         {
-                            "numero": numero,          // Número do destinatário com DDI, DDD e número
-                            "servico": "short",        // Tipo de serviço (curto)
-                            "mensagem": mensagem,      // Texto da mensagem a ser enviada
-                            "parceiro_id": "5034e65a0c", // ID do parceiro fornecido pela API
-                            "codificacao": "0"         // Codificação da mensagem (0 para 7-bits)
+                            "numero": numero,
+                            "servico": "short",
+                            "mensagem": mensagem,
+                            "parceiro_id": "5034e65a0c",
+                            "codificacao": "0"
                         }
                     ])
                 });
@@ -70,23 +65,21 @@
             }
         }
 
-        // Função para carregar boletos
         window.carregarBoletos = function(filtrarVencidos = false) {
             onValue(ref(database, 'boletos'), (snapshot) => {
                 const boletos = snapshot.val();
                 const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
-                tabelaBoletos.innerHTML = ''; // Limpa a tabela
+                tabelaBoletos.innerHTML = '';
 
                 const hoje = new Date();
-                hoje.setHours(0, 0, 0, 0); // Configura para meia-noite
+                hoje.setHours(0, 0, 0, 0);
 
                 for (const id in boletos) {
                     const boleto = boletos[id];
                     const vencimento = new Date(boleto.vencimento);
 
-                    // Verifica se deve filtrar os boletos vencidos e exclui boletos já pagos
                     if (filtrarVencidos && (vencimento >= hoje || boleto.status === 'pago')) {
-                        continue; // Ignora boletos que não estão vencidos ou já foram pagos
+                        continue;
                     }
 
                     const row = tabelaBoletos.insertRow();
@@ -119,18 +112,16 @@
             });
         };
 
-        // Função para abrir a aba de SMS
         window.abrirAbaSMS = function(numeroCelular) {
+            console.log("Abrindo aba SMS com número:", numeroCelular);
             document.getElementById('smsNumero').value = numeroCelular;
             document.getElementById('abaSMS').style.display = 'block';
         };
 
-        // Função para fechar a aba de SMS
         window.fecharAbaSMS = function() {
             document.getElementById('abaSMS').style.display = 'none';
         };
 
-        // Função para enviar SMS com base na escolha do usuário
         window.enviarSMSAvencer = function() {
             const numero = document.getElementById('smsNumero').value;
             enviarSMS(numero, 'SEU BOLETO VENCE ESSA SEMANA');
@@ -143,20 +134,18 @@
             fecharAbaSMS();
         };
 
-        // Função para remover um boleto
         window.removerBoleto = function(id) {
             const confirmacao = confirm("Tem certeza de que deseja remover este boleto?");
             if (confirmacao) {
                 remove(ref(database, 'boletos/' + id)).then(() => {
                     alert('Boleto removido com sucesso!');
-                    carregarBoletos(); // Atualiza a lista de boletos
+                    carregarBoletos();
                 }).catch((error) => {
                     alert('Erro ao remover o boleto: ' + error.message);
                 });
             }
         };
 
-        // Carregar todos os boletos ao iniciar a página
         carregarBoletos();
 
         window.filtrarVencidos = function() {
@@ -164,7 +153,6 @@
         };
     </script>
     <style>
-        /* Estilos para a página e botões */
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #f4f4f9;
@@ -212,7 +200,6 @@
             color: white;
         }
 
-        /* Estilos para a aba de SMS */
         #abaSMS {
             display: none;
             position: fixed;

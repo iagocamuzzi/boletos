@@ -179,10 +179,19 @@
             }
         };
 
-        // Função para abrir a aba flutuante de informações (a ser implementada)
+        // Função para abrir a aba flutuante de informações
         window.abrirAbaFlutuante = function(id, valorParcela, valorPago, dataPagamento) {
-            alert(`Abrir aba flutuante para boleto ID: ${id}`);
-            // Aqui você deve implementar a lógica para abrir e preencher a aba flutuante com os dados do boleto
+            const abaFlutuante = document.getElementById('abaFlutuante');
+            document.getElementById('infoId').innerText = id;
+            document.getElementById('infoValorParcela').innerText = `Valor da Parcela: R$ ${valorParcela}`;
+            document.getElementById('infoValorPago').innerText = `Valor Pago: R$ ${valorPago || '-'}`;
+            document.getElementById('infoDataPagamento').innerText = `Data de Pagamento: ${dataPagamento || '-'}`;
+            abaFlutuante.style.display = 'block';
+        };
+
+        // Função para fechar a aba flutuante de informações
+        window.fecharAbaFlutuante = function() {
+            document.getElementById('abaFlutuante').style.display = 'none';
         };
 
         carregarBoletos();
@@ -239,7 +248,7 @@
             color: white;
         }
 
-        #abaSMS {
+        #abaSMS, #abaFlutuante {
             display: none;
             position: fixed;
             top: 50%;
@@ -253,7 +262,7 @@
             border-radius: 8px;
         }
 
-        #abaSMS button {
+        #abaSMS button, #abaFlutuante button {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
@@ -264,15 +273,15 @@
             border-radius: 4px;
         }
 
-        #abaSMS button:hover {
+        #abaSMS button:hover, #abaFlutuante button:hover {
             background-color: #45a049;
         }
 
-        #fecharSMS {
+        #fecharSMS, #fecharAbaFlutuante {
             background-color: #f44336;
         }
 
-        #fecharSMS:hover {
+        #fecharSMS:hover, #fecharAbaFlutuante:hover {
             background-color: #e53935;
         }
     </style>
@@ -307,6 +316,16 @@
         <button onclick="enviarSMSAvencer()">A VENCER</button>
         <button onclick="enviarSMSVencido()">VENCIDO</button>
         <button id="fecharSMS" onclick="fecharAbaSMS()">Cancelar</button>
+    </div>
+
+    <!-- Aba flutuante de informações -->
+    <div id="abaFlutuante">
+        <h3>Informações do Boleto</h3>
+        <p id="infoId"></p>
+        <p id="infoValorParcela"></p>
+        <p id="infoValorPago"></p>
+        <p id="infoDataPagamento"></p>
+        <button id="fecharAbaFlutuante" onclick="fecharAbaFlutuante()">Fechar</button>
     </div>
 </body>
 </html>

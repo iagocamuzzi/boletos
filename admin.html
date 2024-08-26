@@ -39,7 +39,9 @@
         }
 
         async function enviarSMS(numero, mensagem) {
-            const url = 'https://apihttp.disparopro.com.br:8433/mt';
+            const proxyUrl = 'https://cors-anywhere.herokuapp.com/'; // URL do proxy
+            const apiUrl = 'https://apihttp.disparopro.com.br:8433/mt';
+            const url = proxyUrl + apiUrl;
             const token = '32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb';
 
             console.log("Iniciando envio de SMS...");

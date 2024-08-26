@@ -30,7 +30,7 @@
         }
 
         // Função para carregar boletos
-        function carregarBoletos(filtrarVencidos = false) {
+        window.carregarBoletos = function(filtrarVencidos = false) {
             onValue(ref(database, 'boletos'), (snapshot) => {
                 const boletos = snapshot.val();
                 const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
@@ -65,7 +65,7 @@
                     acaoCell.appendChild(infoButton);
                 }
             });
-        }
+        };
 
         // Carregar todos os boletos ao iniciar a página
         carregarBoletos();

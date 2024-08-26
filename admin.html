@@ -114,7 +114,7 @@
 
                     const smsButton = document.createElement('button');
                     smsButton.innerText = 'SMS';
-                    smsButton.onclick = () => abrirAbaSMS(id);
+                    smsButton.onclick = () => abrirAbaSMS(id, boleto.nomeCliente);
                     acaoCell.appendChild(smsButton);
 
                     const removerButton = document.createElement('button');
@@ -126,17 +126,17 @@
         };
 
         // Função para abrir a aba de SMS e buscar o número no Firebase
-        window.abrirAbaSMS = function(idBoleto) {
-            const boletoRef = ref(database, `boletos/${idBoleto}`);
-            onValue(boletoRef, (snapshot) => {
-                const boleto = snapshot.val();
-                console.log("Boleto recuperado:", boleto); // Log do objeto completo
-                if (boleto && boleto.numeroCelular) {
-                    const numeroCelular = adicionarDDI(boleto.numeroCelular);  // Adiciona o DDI '55' automaticamente
+        window.abrirAbaSMS = function(idBoleto, nomeCliente) {
+            const clienteRef = ref(database, `clientes/${nomeCliente}`);
+            onValue(clienteRef, (snapshot) => {
+                const cliente = snapshot.val();
+                console.log("Cliente recuperado:", cliente); // Log do objeto completo
+                if (cliente && cliente.numeroCelular) {
+                    const numeroCelular = adicionarDDI(cliente.numeroCelular);  // Adiciona o DDI '55' automaticamente
                     console.log("Abrindo aba SMS com número:", numeroCelular);
                     document.getElementById('smsNumero').value = numeroCelular;
                 } else {
-                    console.error('Número de celular não encontrado para o boleto:', idBoleto);
+                    console.error('Número de celular não encontrado para o cliente:', nomeCliente);
                     document.getElementById('smsNumero').value = 'Número não disponível';
                 }
                 document.getElementById('abaSMS').style.display = 'block';

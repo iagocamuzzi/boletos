@@ -7,7 +7,7 @@
     <script type="module">
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -67,10 +67,25 @@
             });
         };
 
-        // Carregar todos os boletos ao iniciar a página
-        carregarBoletos();
+        // Função para confirmar a baixa do boleto
+        window.confirmarBaixa = function() {
+            const id = document.getElementById('idBoleto').value;
+            const valorPago = document.getElementById('valorPago').value;
+            const dataPagamento = document.getElementById('dataPagamento').value;
 
-        // Funções para gerenciar a aba flutuante e a confirmação da baixa
+            const updates = {};
+            updates['/boletos/' + id + '/status'] = 'pago';
+            updates['/boletos/' + id + '/valorPago'] = valorPago;
+            updates['/boletos/' + id + '/dataPagamento'] = dataPagamento;
+
+            update(ref(database), updates).then(() => {
+                alert('Boleto baixado com sucesso!');
+                carregarBoletos(); // Atualiza a lista de boletos
+                fecharAbaFlutuante();
+            });
+        };
+
+        // Funções para gerenciar a aba flutuante e a reabertura de parcelas
         window.abrirAbaFlutuante = function(id, valorParcela, valorPago = '', dataPagamento = '') {
             document.getElementById('abaFlutuante').style.display = 'block';
             document.getElementById('valorPago').value = valorPago || valorParcela;
@@ -82,6 +97,24 @@
         window.fecharAbaFlutuante = function() {
             document.getElementById('abaFlutuante').style.display = 'none';
         };
+
+        window.reabrirParcela = function() {
+            const id = document.getElementById('idBoleto').value;
+
+            const updates = {};
+            updates['/boletos/' + id + '/status'] = 'pendente';
+            updates['/boletos/' + id + '/valorPago'] = null;
+            updates['/boletos/' + id + '/dataPagamento'] = null;
+
+            update(ref(database), updates).then(() => {
+                alert('Parcela reaberta com sucesso!');
+                carregarBoletos(); // Atualiza a lista de boletos
+                fecharAbaFlutuante();
+            });
+        };
+
+        // Carregar todos os boletos ao iniciar a página
+        carregarBoletos();
 
         window.filtrarVencidos = function() {
             carregarBoletos(true);

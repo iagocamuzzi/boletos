@@ -27,6 +27,11 @@
 
         // Função para adicionar o código DDI '55' ao número de telefone
         function adicionarDDI(numero) {
+            if (!numero) {
+                console.error('Número de celular não definido.');
+                return 'Número não definido';
+            }
+
             if (numero.startsWith('55')) {
                 return numero;
             }
@@ -125,9 +130,14 @@
             const boletoRef = ref(database, `boletos/${idBoleto}`);
             onValue(boletoRef, (snapshot) => {
                 const boleto = snapshot.val();
-                const numeroCelular = adicionarDDI(boleto.numeroCelular);  // Adiciona o DDI '55' automaticamente
-                console.log("Abrindo aba SMS com número:", numeroCelular);
-                document.getElementById('smsNumero').value = numeroCelular;
+                if (boleto && boleto.numeroCelular) {
+                    const numeroCelular = adicionarDDI(boleto.numeroCelular);  // Adiciona o DDI '55' automaticamente
+                    console.log("Abrindo aba SMS com número:", numeroCelular);
+                    document.getElementById('smsNumero').value = numeroCelular;
+                } else {
+                    console.error('Número de celular não encontrado para o boleto:', idBoleto);
+                    document.getElementById('smsNumero').value = 'Número não disponível';
+                }
                 document.getElementById('abaSMS').style.display = 'block';
             });
         };
@@ -138,13 +148,21 @@
 
         window.enviarSMSAvencer = function() {
             const numero = document.getElementById('smsNumero').value;
-            enviarSMS(numero, 'SEU BOLETO VENCE ESSA SEMANA');
+            if (numero !== 'Número não disponível') {
+                enviarSMS(numero, 'SEU BOLETO VENCE ESSA SEMANA');
+            } else {
+                alert('Não é possível enviar SMS: número não disponível.');
+            }
             fecharAbaSMS();
         };
 
         window.enviarSMSVencido = function() {
             const numero = document.getElementById('smsNumero').value;
-            enviarSMS(numero, 'BOLETO VENCIDO');
+            if (numero !== 'Número não disponível') {
+                enviarSMS(numero, 'BOLETO VENCIDO');
+            } else {
+                alert('Não é possível enviar SMS: número não disponível.');
+            }
             fecharAbaSMS();
         };
 

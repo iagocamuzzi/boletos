@@ -7,7 +7,7 @@
     <script type="module">
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -64,6 +64,11 @@
                     infoButton.innerText = 'INFO';
                     infoButton.onclick = () => abrirAbaFlutuante(id, boleto.valorParcela, boleto.valorPago, boleto.dataPagamento);
                     acaoCell.appendChild(infoButton);
+
+                    const removerButton = document.createElement('button');
+                    removerButton.innerText = 'REMOVER';
+                    removerButton.onclick = () => removerBoleto(id);
+                    acaoCell.appendChild(removerButton);
                 }
             });
         };
@@ -84,6 +89,19 @@
                 carregarBoletos(); // Atualiza a lista de boletos
                 fecharAbaFlutuante();
             });
+        };
+
+        // Função para remover um boleto
+        window.removerBoleto = function(id) {
+            const confirmacao = confirm("Tem certeza de que deseja remover este boleto?");
+            if (confirmacao) {
+                remove(ref(database, 'boletos/' + id)).then(() => {
+                    alert('Boleto removido com sucesso!');
+                    carregarBoletos(); // Atualiza a lista de boletos
+                }).catch((error) => {
+                    alert('Erro ao remover o boleto: ' + error.message);
+                });
+            }
         };
 
         // Funções para gerenciar a aba flutuante e a reabertura de parcelas
@@ -141,11 +159,11 @@
             background-color: #6200ea;
             color: #fff;
             border: none;
-            padding: 10px 20px;
+            padding: 10px 15px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
-            margin-bottom: 20px;
+            margin-right: 5px;
             transition: background-color 0.3s;
         }
 

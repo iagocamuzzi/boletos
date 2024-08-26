@@ -47,6 +47,18 @@
             console.log("Número:", numero);
             console.log("Mensagem:", mensagem);
 
+            const bodyData = [
+                {
+                    "numero": numero,
+                    "servico": "short",
+                    "mensagem": mensagem,
+                    "parceiro_id": "5034e65a0c",
+                    "codificacao": "0"
+                }
+            ];
+
+            console.log("Body Data:", JSON.stringify(bodyData));
+
             try {
                 const response = await fetch(url, {
                     method: 'POST',
@@ -54,15 +66,7 @@
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify([
-                        {
-                            "numero": numero,
-                            "servico": "short",
-                            "mensagem": mensagem,
-                            "parceiro_id": "5034e65a0c",
-                            "codificacao": "0"
-                        }
-                    ])
+                    body: JSON.stringify(bodyData)
                 });
 
                 console.log("Resposta recebida:", response);
@@ -131,8 +135,8 @@
             onValue(clienteRef, (snapshot) => {
                 const cliente = snapshot.val();
                 console.log("Cliente recuperado:", cliente); // Log do objeto completo
-                if (cliente && cliente.telefone) { // Mudança feita aqui
-                    const numeroCelular = adicionarDDI(cliente.telefone);  // Adiciona o DDI '55' automaticamente
+                if (cliente && cliente.telefone) { 
+                    const numeroCelular = adicionarDDI(cliente.telefone);  
                     console.log("Abrindo aba SMS com número:", numeroCelular);
                     document.getElementById('smsNumero').value = numeroCelular;
                 } else {

@@ -62,7 +62,6 @@
             try {
                 const response = await fetch(url, {
                     method: 'POST',
-                    mode: 'cors',  // Explicita que esperamos suporte CORS
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -80,10 +79,10 @@
                 }
             } catch (error) {
                 console.error('Erro na requisição:', error);
-                if (error.message.includes('CORS')) {
-                    console.error('Problema de CORS: a API pode estar bloqueando requisições de outros domínios.');
+                if (error.message.includes('Failed to fetch')) {
+                    console.error('Problema de rede ou CORS: a requisição foi bloqueada.');
                 } else {
-                    console.error('Erro desconhecido na requisição.');
+                    console.error('Erro desconhecido na requisição:', error.message);
                 }
             }
         }

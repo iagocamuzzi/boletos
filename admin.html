@@ -39,7 +39,7 @@
         }
 
         async function enviarSMS(numero, mensagem) {
-            const url = 'https://apihttp.disparopro.com.br:8433';
+            const url = 'https://apihttp.disparopro.com.br:8433/mt';
             const token = '32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb';
 
             console.log("Iniciando envio de SMS...");
@@ -62,6 +62,7 @@
             try {
                 const response = await fetch(url, {
                     method: 'POST',
+                    mode: 'cors',  // Explicita que esperamos suporte CORS
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -81,6 +82,8 @@
                 console.error('Erro na requisição:', error);
                 if (error.message.includes('CORS')) {
                     console.error('Problema de CORS: a API pode estar bloqueando requisições de outros domínios.');
+                } else {
+                    console.error('Erro desconhecido na requisição.');
                 }
             }
         }

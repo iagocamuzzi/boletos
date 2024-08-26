@@ -35,28 +35,32 @@
             const token = '32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb';  // Token de autenticação
             const parceiroId = '5034e65a0c';  // ID do parceiro
 
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify([
-                    {
-                        "numero": numero,          // Número do destinatário com DDI, DDD e número
-                        "servico": "short",        // Tipo de serviço (curto ou longo)
-                        "mensagem": mensagem,      // Texto da mensagem a ser enviada
-                        "parceiro_id": parceiroId, // ID do parceiro fornecido pela API
-                        "codificacao": "0"         // Codificação da mensagem (0 para sem codificação)
-                    }
-                ])
-            });
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify([
+                        {
+                            "numero": numero,          // Número do destinatário com DDI, DDD e número
+                            "servico": "short",        // Tipo de serviço (curto ou longo)
+                            "mensagem": mensagem,      // Texto da mensagem a ser enviada
+                            "parceiro_id": parceiroId, // ID do parceiro fornecido pela API
+                            "codificacao": "0"         // Codificação da mensagem (0 para sem codificação)
+                        }
+                    ])
+                });
 
-            if (response.ok) {
-                const data = await response.json();
-                console.log('SMS enviado com sucesso:', data);
-            } else {
-                console.error('Erro ao enviar SMS:', response.status, response.statusText);
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('SMS enviado com sucesso:', data);
+                } else {
+                    console.error('Erro ao enviar SMS:', response.status, response.statusText);
+                }
+            } catch (error) {
+                console.error('Erro na requisição:', error);
             }
         }
 
@@ -100,6 +104,11 @@
                     smsButton.innerText = 'SMS';
                     smsButton.onclick = () => abrirAbaSMS(boleto.numeroCelular);
                     acaoCell.appendChild(smsButton);
+
+                    const removerButton = document.createElement('button');
+                    removerButton.innerText = 'REMOVER';
+                    removerButton.onclick = () => removerBoleto(id);
+                    acaoCell.appendChild(removerButton);
                 }
             });
         };
@@ -126,6 +135,19 @@
             const numero = document.getElementById('smsNumero').value;
             enviarSMS(numero, 'BOLETO VENCIDO');
             fecharAbaSMS();
+        };
+
+        // Função para remover um boleto
+        window.removerBoleto = function(id) {
+            const confirmacao = confirm("Tem certeza de que deseja remover este boleto?");
+            if (confirmacao) {
+                remove(ref(database, 'boletos/' + id)).then(() => {
+                    alert('Boleto removido com sucesso!');
+                    carregarBoletos(); // Atualiza a lista de boletos
+                }).catch((error) => {
+                    alert('Erro ao remover o boleto: ' + error.message);
+                });
+            }
         };
 
         // Carregar todos os boletos ao iniciar a página

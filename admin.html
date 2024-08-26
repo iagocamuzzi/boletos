@@ -25,6 +25,14 @@
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
 
+        // Função para adicionar o código DDI '55' ao número de telefone
+        function adicionarDDI(numero) {
+            if (numero.startsWith('55')) {
+                return numero;
+            }
+            return `55${numero}`;
+        }
+
         async function enviarSMS(numero, mensagem) {
             const url = 'https://apihttp.disparopro.com.br:8433/mt';
             const token = '32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb';
@@ -101,7 +109,7 @@
 
                     const smsButton = document.createElement('button');
                     smsButton.innerText = 'SMS';
-                    smsButton.onclick = () => abrirAbaSMS(boleto.numeroCelular);
+                    smsButton.onclick = () => abrirAbaSMS(id);
                     acaoCell.appendChild(smsButton);
 
                     const removerButton = document.createElement('button');
@@ -112,10 +120,16 @@
             });
         };
 
-        window.abrirAbaSMS = function(numeroCelular) {
-            console.log("Abrindo aba SMS com número:", numeroCelular);
-            document.getElementById('smsNumero').value = numeroCelular;
-            document.getElementById('abaSMS').style.display = 'block';
+        // Função para abrir a aba de SMS e buscar o número no Firebase
+        window.abrirAbaSMS = function(idBoleto) {
+            const boletoRef = ref(database, `boletos/${idBoleto}`);
+            onValue(boletoRef, (snapshot) => {
+                const boleto = snapshot.val();
+                const numeroCelular = adicionarDDI(boleto.numeroCelular);  // Adiciona o DDI '55' automaticamente
+                console.log("Abrindo aba SMS com número:", numeroCelular);
+                document.getElementById('smsNumero').value = numeroCelular;
+                document.getElementById('abaSMS').style.display = 'block';
+            });
         };
 
         window.fecharAbaSMS = function() {

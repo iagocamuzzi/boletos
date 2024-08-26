@@ -43,8 +43,9 @@
                     const boleto = boletos[id];
                     const vencimento = new Date(boleto.vencimento);
 
-                    if (filtrarVencidos && vencimento >= hoje) {
-                        continue; // Ignora boletos que não estão vencidos
+                    // Verifica se deve filtrar os boletos vencidos e exclui boletos já pagos
+                    if (filtrarVencidos && (vencimento >= hoje || boleto.status === 'pago')) {
+                        continue; // Ignora boletos que não estão vencidos ou já foram pagos
                     }
 
                     const row = tabelaBoletos.insertRow();

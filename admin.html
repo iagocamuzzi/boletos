@@ -79,6 +79,9 @@
                 }
             } catch (error) {
                 console.error('Erro na requisição:', error);
+                if (error.message.includes('CORS')) {
+                    console.error('Problema de CORS: a API pode estar bloqueando requisições de outros domínios.');
+                }
             }
         }
 

@@ -11,7 +11,7 @@
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyC1jX6T23oV_NHTjE_z4ZcWQwop2BWDVxs",
+            apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
             authDomain: "boletosvistalinda.firebaseapp.com",
             projectId: "boletosvistalinda",
             storageBucket: "boletosvistalinda.appspot.com",
@@ -27,6 +27,37 @@
         function formatarData(data) {
             const partes = data.split('-');
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+
+        // Função para enviar SMS
+        async function enviarSMS(numero, mensagem) {
+            const url = 'https://apihttp.disparopro.com.br:8433/mt';
+            const token = '32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb';  // Token de autenticação
+            const parceiroId = '5034e65a0c';  // ID do parceiro
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify([
+                    {
+                        "numero": numero,          // Número do destinatário com DDI, DDD e número
+                        "servico": "short",        // Tipo de serviço (curto ou longo)
+                        "mensagem": mensagem,      // Texto da mensagem a ser enviada
+                        "parceiro_id": parceiroId, // ID do parceiro fornecido pela API
+                        "codificacao": "0"         // Codificação da mensagem (0 para sem codificação)
+                    }
+                ])
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('SMS enviado com sucesso:', data);
+            } else {
+                console.error('Erro ao enviar SMS:', response.status, response.statusText);
+            }
         }
 
         // Função para carregar boletos
@@ -65,71 +96,36 @@
                     infoButton.onclick = () => abrirAbaFlutuante(id, boleto.valorParcela, boleto.valorPago, boleto.dataPagamento);
                     acaoCell.appendChild(infoButton);
 
-                    const removerButton = document.createElement('button');
-                    removerButton.innerText = 'REMOVER';
-                    removerButton.onclick = () => removerBoleto(id);
-                    acaoCell.appendChild(removerButton);
+                    const smsButton = document.createElement('button');
+                    smsButton.innerText = 'SMS';
+                    smsButton.onclick = () => abrirAbaSMS(boleto.numeroCelular);
+                    acaoCell.appendChild(smsButton);
                 }
             });
         };
 
-        // Função para confirmar a baixa do boleto
-        window.confirmarBaixa = function() {
-            const id = document.getElementById('idBoleto').value;
-            const valorPago = document.getElementById('valorPago').value;
-            const dataPagamento = document.getElementById('dataPagamento').value;
-
-            const updates = {};
-            updates['/boletos/' + id + '/status'] = 'pago';
-            updates['/boletos/' + id + '/valorPago'] = valorPago;
-            updates['/boletos/' + id + '/dataPagamento'] = dataPagamento;
-
-            update(ref(database), updates).then(() => {
-                alert('Boleto baixado com sucesso!');
-                carregarBoletos(); // Atualiza a lista de boletos
-                fecharAbaFlutuante();
-            });
+        // Função para abrir a aba de SMS
+        window.abrirAbaSMS = function(numeroCelular) {
+            document.getElementById('smsNumero').value = numeroCelular;
+            document.getElementById('abaSMS').style.display = 'block';
         };
 
-        // Função para remover um boleto
-        window.removerBoleto = function(id) {
-            const confirmacao = confirm("Tem certeza de que deseja remover este boleto?");
-            if (confirmacao) {
-                remove(ref(database, 'boletos/' + id)).then(() => {
-                    alert('Boleto removido com sucesso!');
-                    carregarBoletos(); // Atualiza a lista de boletos
-                }).catch((error) => {
-                    alert('Erro ao remover o boleto: ' + error.message);
-                });
-            }
+        // Função para fechar a aba de SMS
+        window.fecharAbaSMS = function() {
+            document.getElementById('abaSMS').style.display = 'none';
         };
 
-        // Funções para gerenciar a aba flutuante e a reabertura de parcelas
-        window.abrirAbaFlutuante = function(id, valorParcela, valorPago = '', dataPagamento = '') {
-            document.getElementById('abaFlutuante').style.display = 'block';
-            document.getElementById('valorPago').value = valorPago || valorParcela;
-            document.getElementById('dataPagamento').value = dataPagamento;
-            document.getElementById('idBoleto').value = id;
-            document.getElementById('reabrirParcela').style.display = dataPagamento ? 'block' : 'none';
+        // Função para enviar SMS com base na escolha do usuário
+        window.enviarSMSAvencer = function() {
+            const numero = document.getElementById('smsNumero').value;
+            enviarSMS(numero, 'SEU BOLETO VENCE ESSA SEMANA');
+            fecharAbaSMS();
         };
 
-        window.fecharAbaFlutuante = function() {
-            document.getElementById('abaFlutuante').style.display = 'none';
-        };
-
-        window.reabrirParcela = function() {
-            const id = document.getElementById('idBoleto').value;
-
-            const updates = {};
-            updates['/boletos/' + id + '/status'] = 'pendente';
-            updates['/boletos/' + id + '/valorPago'] = null;
-            updates['/boletos/' + id + '/dataPagamento'] = null;
-
-            update(ref(database), updates).then(() => {
-                alert('Parcela reaberta com sucesso!');
-                carregarBoletos(); // Atualiza a lista de boletos
-                fecharAbaFlutuante();
-            });
+        window.enviarSMSVencido = function() {
+            const numero = document.getElementById('smsNumero').value;
+            enviarSMS(numero, 'BOLETO VENCIDO');
+            fecharAbaSMS();
         };
 
         // Carregar todos os boletos ao iniciar a página
@@ -188,8 +184,8 @@
             color: white;
         }
 
-        /* Estilos para a aba flutuante */
-        #abaFlutuante {
+        /* Estilos para a aba de SMS */
+        #abaSMS {
             display: none;
             position: fixed;
             top: 50%;
@@ -203,18 +199,10 @@
             border-radius: 8px;
         }
 
-        #abaFlutuante input {
-            width: 100%;
-            margin-bottom: 10px;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        #abaFlutuante button {
+        #abaSMS button {
             width: 100%;
             padding: 10px;
+            margin-bottom: 10px;
             background-color: #4CAF50;
             color: white;
             border: none;
@@ -222,29 +210,16 @@
             border-radius: 4px;
         }
 
-        #abaFlutuante button:hover {
+        #abaSMS button:hover {
             background-color: #45a049;
         }
 
-        #reabrirParcela {
+        #fecharSMS {
             background-color: #f44336;
-            margin-top: 10px;
         }
 
-        #reabrirParcela:hover {
+        #fecharSMS:hover {
             background-color: #e53935;
-        }
-
-        /* Estilos para o fundo escuro */
-        #fundoEscuro {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 999;
         }
     </style>
 </head>
@@ -271,20 +246,13 @@
         </tbody>
     </table>
 
-    <!-- Aba flutuante -->
-    <div id="abaFlutuante">
-        <h3>Gerenciar Boleto</h3>
-        <input type="hidden" id="idBoleto">
-        <label for="valorPago">Valor Pago:</label>
-        <input type="number" id="valorPago" step="0.01" required>
-        <label for="dataPagamento">Data do Pagamento:</label>
-        <input type="date" id="dataPagamento" required>
-        <button onclick="confirmarBaixa()">Confirmar</button>
-        <button id="reabrirParcela" onclick="reabrirParcela()">Reabrir Parcela</button>
-        <button onclick="fecharAbaFlutuante()">Cancelar</button>
+    <!-- Aba flutuante de SMS -->
+    <div id="abaSMS">
+        <h3>Enviar SMS</h3>
+        <input type="hidden" id="smsNumero">
+        <button onclick="enviarSMSAvencer()">A VENCER</button>
+        <button onclick="enviarSMSVencido()">VENCIDO</button>
+        <button id="fecharSMS" onclick="fecharAbaSMS()">Cancelar</button>
     </div>
-
-    <!-- Fundo escuro -->
-    <div id="fundoEscuro" onclick="fecharAbaFlutuante()"></div>
 </body>
 </html>

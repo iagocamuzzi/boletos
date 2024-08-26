@@ -38,54 +38,21 @@
             return `55${numero}`;
         }
 
+        // Função para enviar SMS usando a função serverless
         async function enviarSMS(numero, mensagem) {
-            const proxyUrl = 'https://cors-anywhere.herokuapp.com/'; // URL do proxy
-            const apiUrl = 'https://apihttp.disparopro.com.br:8433/mt';
-            const url = proxyUrl + apiUrl;
-            const token = '32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb';
-
-            console.log("Iniciando envio de SMS...");
-            console.log("URL:", url);
-            console.log("Número:", numero);
-            console.log("Mensagem:", mensagem);
-
-            const bodyData = [
-                {
-                    "numero": numero,
-                    "servico": "short",
-                    "mensagem": mensagem,
-                    "parceiro_id": "5034e65a0c",
-                    "codificacao": "0"
-                }
-            ];
-
-            console.log("Body Data:", JSON.stringify(bodyData));
-
             try {
-                const response = await fetch(url, {
+                const response = await fetch('/api/sendSMS', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(bodyData)
+                    body: JSON.stringify({ numero, mensagem })
                 });
 
-                console.log("Resposta recebida:", response);
-
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('SMS enviado com sucesso:', data);
-                } else {
-                    console.error('Erro ao enviar SMS:', response.status, response.statusText);
-                }
+                const data = await response.json();
+                console.log('SMS enviado com sucesso:', data);
             } catch (error) {
-                console.error('Erro na requisição:', error);
-                if (error.message.includes('Failed to fetch')) {
-                    console.error('Problema de rede ou CORS: a requisição foi bloqueada.');
-                } else {
-                    console.error('Erro desconhecido na requisição:', error.message);
-                }
+                console.error('Erro ao enviar SMS:', error);
             }
         }
 

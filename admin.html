@@ -130,6 +130,7 @@
             const boletoRef = ref(database, `boletos/${idBoleto}`);
             onValue(boletoRef, (snapshot) => {
                 const boleto = snapshot.val();
+                console.log("Boleto recuperado:", boleto); // Log do objeto completo
                 if (boleto && boleto.numeroCelular) {
                     const numeroCelular = adicionarDDI(boleto.numeroCelular);  // Adiciona o DDI '55' automaticamente
                     console.log("Abrindo aba SMS com número:", numeroCelular);
@@ -176,6 +177,12 @@
                     alert('Erro ao remover o boleto: ' + error.message);
                 });
             }
+        };
+
+        // Função para abrir a aba flutuante de informações (a ser implementada)
+        window.abrirAbaFlutuante = function(id, valorParcela, valorPago, dataPagamento) {
+            alert(`Abrir aba flutuante para boleto ID: ${id}`);
+            // Aqui você deve implementar a lógica para abrir e preencher a aba flutuante com os dados do boleto
         };
 
         carregarBoletos();

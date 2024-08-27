@@ -47,8 +47,17 @@
                     body: JSON.stringify({ numero, mensagem })
                 });
 
-                const data = await response.json();
-                console.log('SMS enviado com sucesso:', data);
+                const textResponse = await response.text(); // Obter a resposta como texto
+                console.log('Resposta recebida como texto:', textResponse);
+
+                // Tentar analisar como JSON apenas se a resposta for válida
+                try {
+                    const data = JSON.parse(textResponse);
+                    console.log('SMS enviado com sucesso:', data);
+                } catch (e) {
+                    console.error('Erro ao analisar JSON:', e);
+                    console.error('Resposta não é JSON válida:', textResponse);
+                }
             } catch (error) {
                 console.error('Erro ao enviar SMS:', error);
             }

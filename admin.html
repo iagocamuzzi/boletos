@@ -201,10 +201,7 @@
         window.enviarSMSAvencer = function() {
             const numero = document.getElementById('smsNumero').value;
             if (numero !== 'Número não disponível') {
-                enviarSMS(numero, 'Seu boleto da OTICA VISTA LINDA vence essa semana.
-Caso tenha efetuado o pagamento, desconsidere esta mensagem.
-
-2799600-0790');
+                enviarSMS(numero, 'SEU BOLETO VENCE ESSA SEMANA');
             } else {
                 alert('Não é possível enviar SMS: número não disponível.');
             }

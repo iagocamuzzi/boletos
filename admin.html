@@ -47,10 +47,9 @@
                     body: JSON.stringify({ numero, mensagem })
                 });
 
-                const textResponse = await response.text(); // Obter a resposta como texto
+                const textResponse = await response.text();
                 console.log('Resposta recebida como texto:', textResponse);
 
-                // Tentar analisar como JSON apenas se a resposta for válida
                 try {
                     const data = JSON.parse(textResponse);
                     console.log('SMS enviado com sucesso:', data);
@@ -94,7 +93,7 @@
 
                     const infoButton = document.createElement('button');
                     infoButton.innerText = 'INFO';
-                    infoButton.onclick = () => abrirAbaFlutuante(id, boleto.valorParcela, boleto.valorPago, boleto.dataPagamento);
+                    infoButton.onclick = () => abrirAbaFlutuante(id, boleto);
                     acaoCell.appendChild(infoButton);
 
                     const smsButton = document.createElement('button');
@@ -108,6 +107,69 @@
                     acaoCell.appendChild(removerButton);
                 }
             });
+        };
+
+        window.abrirAbaFlutuante = function(id, boleto) {
+            const abaFlutuante = document.getElementById('abaFlutuante');
+            document.getElementById('infoId').innerText = `ID: ${id}`;
+            document.getElementById('infoValorParcela').innerText = `Valor da Parcela: R$ ${boleto.valorParcela}`;
+            document.getElementById('inputValorPago').value = boleto.valorPago || '';
+            document.getElementById('inputDataPagamento').value = boleto.dataPagamento || '';
+
+            const salvarButton = document.getElementById('salvarBaixa');
+            salvarButton.onclick = () => salvarBaixa(id);
+
+            const reabrirButton = document.getElementById('reabrirParcela');
+            reabrirButton.onclick = () => reabrirParcela(id);
+
+            abaFlutuante.style.display = 'block';
+        };
+
+        window.fecharAbaFlutuante = function() {
+            document.getElementById('abaFlutuante').style.display = 'none';
+        };
+
+        window.salvarBaixa = function(id) {
+            const valorPago = document.getElementById('inputValorPago').value;
+            const dataPagamento = document.getElementById('inputDataPagamento').value;
+
+            update(ref(database, 'boletos/' + id), {
+                valorPago,
+                dataPagamento,
+                status: 'pago'
+            }).then(() => {
+                alert('Baixa salva com sucesso!');
+                fecharAbaFlutuante();
+                carregarBoletos();
+            }).catch((error) => {
+                alert('Erro ao salvar a baixa: ' + error.message);
+            });
+        };
+
+        window.reabrirParcela = function(id) {
+            update(ref(database, 'boletos/' + id), {
+                valorPago: null,
+                dataPagamento: null,
+                status: 'pendente'
+            }).then(() => {
+                alert('Parcela reaberta com sucesso!');
+                fecharAbaFlutuante();
+                carregarBoletos();
+            }).catch((error) => {
+                alert('Erro ao reabrir a parcela: ' + error.message);
+            });
+        };
+
+        window.removerBoleto = function(id) {
+            const confirmacao = confirm("Tem certeza de que deseja remover este boleto?");
+            if (confirmacao) {
+                remove(ref(database, 'boletos/' + id)).then(() => {
+                    alert('Boleto removido com sucesso!');
+                    carregarBoletos();
+                }).catch((error) => {
+                    alert('Erro ao remover o boleto: ' + error.message);
+                });
+            }
         };
 
         window.abrirAbaSMS = function(idBoleto, nomeCliente) {
@@ -149,31 +211,6 @@
                 alert('Não é possível enviar SMS: número não disponível.');
             }
             fecharAbaSMS();
-        };
-
-        window.removerBoleto = function(id) {
-            const confirmacao = confirm("Tem certeza de que deseja remover este boleto?");
-            if (confirmacao) {
-                remove(ref(database, 'boletos/' + id)).then(() => {
-                    alert('Boleto removido com sucesso!');
-                    carregarBoletos();
-                }).catch((error) => {
-                    alert('Erro ao remover o boleto: ' + error.message);
-                });
-            }
-        };
-
-        window.abrirAbaFlutuante = function(id, valorParcela, valorPago, dataPagamento) {
-            const abaFlutuante = document.getElementById('abaFlutuante');
-            document.getElementById('infoId').innerText = id;
-            document.getElementById('infoValorParcela').innerText = `Valor da Parcela: R$ ${valorParcela}`;
-            document.getElementById('infoValorPago').innerText = `Valor Pago: R$ ${valorPago || '-'}`;
-            document.getElementById('infoDataPagamento').innerText = `Data de Pagamento: ${dataPagamento || '-'}`;
-            abaFlutuante.style.display = 'block';
-        };
-
-        window.fecharAbaFlutuante = function() {
-            document.getElementById('abaFlutuante').style.display = 'none';
         };
 
         carregarBoletos();
@@ -266,6 +303,15 @@
         #fecharSMS:hover, #fecharAbaFlutuante:hover {
             background-color: #e53935;
         }
+
+        #inputValorPago, #inputDataPagamento {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -305,8 +351,10 @@
         <h3>Informações do Boleto</h3>
         <p id="infoId"></p>
         <p id="infoValorParcela"></p>
-        <p id="infoValorPago"></p>
-        <p id="infoDataPagamento"></p>
+        <input type="text" id="inputValorPago" placeholder="Valor Pago">
+        <input type="text" id="inputDataPagamento" placeholder="Data de Pagamento (DD/MM/AAAA)">
+        <button id="salvarBaixa">Salvar Baixa</button>
+        <button id="reabrirParcela">Reabrir Parcela</button>
         <button id="fecharAbaFlutuante" onclick="fecharAbaFlutuante()">Fechar</button>
     </div>
 </body>

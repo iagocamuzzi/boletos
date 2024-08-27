@@ -12,7 +12,7 @@
             apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
             authDomain: "boletosvistalinda.firebaseapp.com",
             projectId: "boletosvistalinda",
-            storageBucket: "boletosvistalinda.appspot.com",
+            storageBucket: "boletosvistalinda",
             messagingSenderId: "809943988538",
             appId: "1:809943988538:web:4e25ccb03f5c940600f803"
         };
@@ -201,7 +201,7 @@
         window.enviarSMSAvencer = function() {
             const numero = document.getElementById('smsNumero').value;
             if (numero !== 'Número não disponível') {
-                enviarSMS(numero, 'SEU BOLETO VENCE ESSA SEMANA');
+                enviarSMS(numero, 'Seu boleto da OTICA VISTA LINDA vence essa semana. Caso tenha efetuado o pagamento, desconsidere esta mensagem. 2799600-0790');
             } else {
                 alert('Não é possível enviar SMS: número não disponível.');
             }
@@ -211,7 +211,7 @@
         window.enviarSMSVencido = function() {
             const numero = document.getElementById('smsNumero').value;
             if (numero !== 'Número não disponível') {
-                enviarSMS(numero, 'BOLETO VENCIDO');
+                enviarSMS(numero, 'Não identificamos o pagamento do seu boleto. OTICA VISTA LINDA 2799600-0790');
             } else {
                 alert('Não é possível enviar SMS: número não disponível.');
             }

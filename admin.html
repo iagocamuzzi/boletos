@@ -12,7 +12,7 @@
             apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
             authDomain: "boletosvistalinda.firebaseapp.com",
             projectId: "boletosvistalinda",
-            storageBucket: "boletosvistalinda",
+            storageBucket: "boletosvistalinda.appspot.com",
             messagingSenderId: "809943988538",
             appId: "1:809943988538:web:4e25ccb03f5c940600f803"
         };
@@ -65,7 +65,7 @@
             }
         }
 
-        window.carregarBoletos = function(filtrarVencidos = false) {
+        window.carregarBoletos = function(filtrarVencidos = false, filtrarSemanal = false) {
             onValue(ref(database, 'boletos'), (snapshot) => {
                 const boletos = snapshot.val();
                 const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
@@ -74,11 +74,18 @@
                 const hoje = new Date();
                 hoje.setHours(0, 0, 0, 0);
 
+                const primeiroDiaDaSemana = new Date(hoje.setDate(hoje.getDate() - hoje.getDay() + 1)); // Segunda-feira
+                const ultimoDiaDaSemana = new Date(hoje.setDate(primeiroDiaDaSemana.getDate() + 6)); // Domingo
+
                 for (const id in boletos) {
                     const boleto = boletos[id];
                     const vencimento = new Date(boleto.vencimento);
 
                     if (filtrarVencidos && (vencimento >= hoje || boleto.status === 'pago')) {
+                        continue;
+                    }
+
+                    if (filtrarSemanal && (vencimento < primeiroDiaDaSemana || vencimento > ultimoDiaDaSemana)) {
                         continue;
                     }
 
@@ -223,6 +230,10 @@
         window.filtrarVencidos = function() {
             carregarBoletos(true);
         };
+
+        window.filtrarSemanal = function() {
+            carregarBoletos(false, true);
+        };
     </script>
     <style>
         body {
@@ -323,6 +334,7 @@
     <h1>Boletos Cadastrados</h1>
     <button onclick="carregarBoletos()">Mostrar Todos os Boletos</button>
     <button onclick="filtrarVencidos()">Mostrar Boletos Vencidos</button>
+    <button onclick="filtrarSemanal()">Mostrar Semanal</button>
 
     <table id="tabelaBoletos">
         <thead>

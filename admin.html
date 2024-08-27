@@ -25,7 +25,6 @@
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
 
-        // Função para adicionar o código DDI '55' ao número de telefone
         function adicionarDDI(numero) {
             if (!numero) {
                 console.error('Número de celular não definido.');
@@ -38,7 +37,6 @@
             return `55${numero}`;
         }
 
-        // Função para enviar SMS usando a função serverless
         async function enviarSMS(numero, mensagem) {
             try {
                 const response = await fetch('/api/sendSMS', {
@@ -103,14 +101,13 @@
             });
         };
 
-        // Função para abrir a aba de SMS e buscar o número no Firebase
         window.abrirAbaSMS = function(idBoleto, nomeCliente) {
             const clienteRef = ref(database, `clientes/${nomeCliente}`);
             onValue(clienteRef, (snapshot) => {
                 const cliente = snapshot.val();
-                console.log("Cliente recuperado:", cliente); // Log do objeto completo
-                if (cliente && cliente.telefone) { 
-                    const numeroCelular = adicionarDDI(cliente.telefone);  
+                console.log("Cliente recuperado:", cliente);
+                if (cliente && cliente.telefone) {
+                    const numeroCelular = adicionarDDI(cliente.telefone);
                     console.log("Abrindo aba SMS com número:", numeroCelular);
                     document.getElementById('smsNumero').value = numeroCelular;
                 } else {
@@ -157,7 +154,6 @@
             }
         };
 
-        // Função para abrir a aba flutuante de informações
         window.abrirAbaFlutuante = function(id, valorParcela, valorPago, dataPagamento) {
             const abaFlutuante = document.getElementById('abaFlutuante');
             document.getElementById('infoId').innerText = id;
@@ -167,7 +163,6 @@
             abaFlutuante.style.display = 'block';
         };
 
-        // Função para fechar a aba flutuante de informações
         window.fecharAbaFlutuante = function() {
             document.getElementById('abaFlutuante').style.display = 'none';
         };

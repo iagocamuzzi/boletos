@@ -74,8 +74,10 @@
                 const hoje = new Date();
                 hoje.setHours(0, 0, 0, 0);
 
-                const primeiroDiaDaSemana = new Date(hoje.setDate(hoje.getDate() - hoje.getDay() + 1)); // Segunda-feira
-                const ultimoDiaDaSemana = new Date(hoje.setDate(primeiroDiaDaSemana.getDate() + 6)); // Domingo
+                const primeiroDiaDaSemana = new Date(hoje);
+                primeiroDiaDaSemana.setDate(hoje.getDate() - hoje.getDay() + 1); // Segunda-feira
+                const ultimoDiaDaSemana = new Date(primeiroDiaDaSemana);
+                ultimoDiaDaSemana.setDate(primeiroDiaDaSemana.getDate() + 6); // Domingo
 
                 for (const id in boletos) {
                     const boleto = boletos[id];

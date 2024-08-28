@@ -40,7 +40,7 @@
             return `55${numero}`;
         }
 
-        async function enviarSMS(numero, mensagem, idBoleto) {
+        async function enviarSMS(numero, mensagem, idBoleto, tipo) {
             try {
                 const response = await fetch('/api/sendSMS', {
                     method: 'POST',
@@ -59,7 +59,7 @@
 
                     const historicoRef = ref(database, `boletos/${idBoleto}/historicoSMS`);
                     push(historicoRef, {
-                        mensagem,
+                        tipo,
                         dataEnvio: new Date().toISOString()
                     });
                 } catch (e) {
@@ -209,16 +209,25 @@
                         const historicoContainer = document.getElementById('historicoSMS');
                         historicoContainer.innerHTML = '';
 
+                        let aVencerCount = 0;
+                        let vencidoCount = 0;
+
                         if (historico) {
                             for (const key in historico) {
                                 const item = historico[key];
-                                const listItem = document.createElement('li');
-                                listItem.innerText = `Mensagem: "${item.mensagem}" enviada em ${formatarDataHora(item.dataEnvio)}`;
-                                historicoContainer.appendChild(listItem);
+                                if (item.tipo === 'A Vencer') {
+                                    aVencerCount++;
+                                } else if (item.tipo === 'Vencido') {
+                                    vencidoCount++;
+                                }
                             }
-                        } else {
-                            historicoContainer.innerHTML = '<li>Nenhum SMS enviado ainda.</li>';
                         }
+
+                        historicoContainer.innerHTML = `
+                            <p>Histórico</p>
+                            <p>A Vencer: ${aVencerCount}</p>
+                            <p>Vencido: ${vencidoCount}</p>
+                        `;
 
                         document.getElementById('abaSMS').style.display = 'block';
                     });
@@ -229,11 +238,6 @@
             });
         };
 
-        function formatarDataHora(dataHora) {
-            const data = new Date(dataHora);
-            return `${data.getDate().toString().padStart(2, '0')}/${(data.getMonth() + 1).toString().padStart(2, '0')}/${data.getFullYear()} ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
-        }
-
         window.fecharAbaSMS = function() {
             document.getElementById('abaSMS').style.display = 'none';
         };
@@ -242,7 +246,7 @@
             const numero = document.getElementById('smsNumero').value;
             const idBoleto = document.querySelector('[data-id]').getAttribute('data-id');
             if (numero !== 'Número não disponível') {
-                enviarSMS(numero, 'Seu boleto da OTICA VISTA LINDA vence essa semana. Caso tenha efetuado o pagamento, desconsidere esta mensagem. 2799600-0790', idBoleto);
+                enviarSMS(numero, 'Seu boleto da OTICA VISTA LINDA vence essa semana. Caso tenha efetuado o pagamento, desconsidere esta mensagem. 2799600-0790', idBoleto, 'A Vencer');
             } else {
                 alert('Não é possível enviar SMS: número não disponível.');
             }
@@ -253,7 +257,7 @@
             const numero = document.getElementById('smsNumero').value;
             const idBoleto = document.querySelector('[data-id]').getAttribute('data-id');
             if (numero !== 'Número não disponível') {
-                enviarSMS(numero, 'Não identificamos o pagamento do seu boleto. OTICA VISTA LINDA 2799600-0790', idBoleto);
+                enviarSMS(numero, 'Não identificamos o pagamento do seu boleto. OTICA VISTA LINDA 2799600-0790', idBoleto, 'Vencido');
             } else {
                 alert('Não é possível enviar SMS: número não disponível.');
             }
@@ -378,10 +382,8 @@
             margin-top: 10px;
         }
 
-        #historicoSMS li {
-            list-style-type: none;
-            padding: 5px;
-            border-bottom: 1px solid #ddd;
+        #historicoSMS p {
+            margin: 5px 0;
         }
     </style>
 </head>
@@ -415,7 +417,7 @@
         <input type="hidden" id="smsNumero">
         <button onclick="enviarSMSAvencer()">A VENCER</button>
         <button onclick="enviarSMSVencido()">VENCIDO</button>
-        <ul id="historicoSMS"></ul>
+        <div id="historicoSMS"></div>
         <button id="fecharSMS" onclick="fecharAbaSMS()">Cancelar</button>
     </div>
 

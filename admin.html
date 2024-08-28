@@ -102,6 +102,7 @@
                     row.insertCell(5).innerText = boleto.dataPagamento ? formatarData(boleto.dataPagamento) : '-';
                     row.insertCell(6).innerText = boleto.status.charAt(0).toUpperCase() + boleto.status.slice(1);
                     const acaoCell = row.insertCell(7);
+                    acaoCell.classList.add('acoes');
 
                     const infoButton = document.createElement('button');
                     infoButton.innerText = 'INFO';
@@ -262,6 +263,7 @@
             font-size: 14px;
             margin-right: 5px;
             transition: background-color 0.3s;
+            white-space: nowrap;
         }
 
         button:hover {
@@ -278,11 +280,18 @@
             border: 1px solid #ddd;
             padding: 10px;
             text-align: left;
+            white-space: nowrap;
         }
 
         th {
             background-color: #6200ea;
             color: white;
+        }
+
+        .acoes {
+            display: flex;
+            gap: 5px;
+            flex-wrap: nowrap;
         }
 
         #abaSMS, #abaFlutuante {

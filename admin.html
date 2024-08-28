@@ -6,7 +6,7 @@
     <title>Boletos Cadastrados</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        import { getDatabase, ref, onValue, update, remove, push } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
@@ -40,7 +40,7 @@
             return `55${numero}`;
         }
 
-        async function enviarSMS(numero, mensagem) {
+        async function enviarSMS(numero, mensagem, idBoleto) {
             try {
                 const response = await fetch('/api/sendSMS', {
                     method: 'POST',
@@ -56,6 +56,12 @@
                 try {
                     const data = JSON.parse(textResponse);
                     console.log('SMS enviado com sucesso:', data);
+
+                    const historicoRef = ref(database, `boletos/${idBoleto}/historicoSMS`);
+                    push(historicoRef, {
+                        mensagem,
+                        dataEnvio: new Date().toISOString()
+                    });
                 } catch (e) {
                     console.error('Erro ao analisar JSON:', e);
                     console.error('Resposta não é JSON válida:', textResponse);
@@ -196,13 +202,37 @@
                     const numeroCelular = adicionarDDI(cliente.telefone);
                     console.log("Abrindo aba SMS com número:", numeroCelular);
                     document.getElementById('smsNumero').value = numeroCelular;
+
+                    const historicoRef = ref(database, `boletos/${idBoleto}/historicoSMS`);
+                    onValue(historicoRef, (snapshot) => {
+                        const historico = snapshot.val();
+                        const historicoContainer = document.getElementById('historicoSMS');
+                        historicoContainer.innerHTML = '';
+
+                        if (historico) {
+                            for (const key in historico) {
+                                const item = historico[key];
+                                const listItem = document.createElement('li');
+                                listItem.innerText = `Mensagem: "${item.mensagem}" enviada em ${formatarDataHora(item.dataEnvio)}`;
+                                historicoContainer.appendChild(listItem);
+                            }
+                        } else {
+                            historicoContainer.innerHTML = '<li>Nenhum SMS enviado ainda.</li>';
+                        }
+
+                        document.getElementById('abaSMS').style.display = 'block';
+                    });
                 } else {
                     console.error('Número de celular não encontrado para o cliente:', nomeCliente);
                     document.getElementById('smsNumero').value = 'Número não disponível';
                 }
-                document.getElementById('abaSMS').style.display = 'block';
             });
         };
+
+        function formatarDataHora(dataHora) {
+            const data = new Date(dataHora);
+            return `${data.getDate().toString().padStart(2, '0')}/${(data.getMonth() + 1).toString().padStart(2, '0')}/${data.getFullYear()} ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
+        }
 
         window.fecharAbaSMS = function() {
             document.getElementById('abaSMS').style.display = 'none';
@@ -210,8 +240,9 @@
 
         window.enviarSMSAvencer = function() {
             const numero = document.getElementById('smsNumero').value;
+            const idBoleto = document.querySelector('[data-id]').getAttribute('data-id');
             if (numero !== 'Número não disponível') {
-                enviarSMS(numero, 'Seu boleto da OTICA VISTA LINDA vence essa semana. Caso tenha efetuado o pagamento, desconsidere esta mensagem. 2799600-0790');
+                enviarSMS(numero, 'Seu boleto da OTICA VISTA LINDA vence essa semana. Caso tenha efetuado o pagamento, desconsidere esta mensagem. 2799600-0790', idBoleto);
             } else {
                 alert('Não é possível enviar SMS: número não disponível.');
             }
@@ -220,8 +251,9 @@
 
         window.enviarSMSVencido = function() {
             const numero = document.getElementById('smsNumero').value;
+            const idBoleto = document.querySelector('[data-id]').getAttribute('data-id');
             if (numero !== 'Número não disponível') {
-                enviarSMS(numero, 'Não identificamos o pagamento do seu boleto. OTICA VISTA LINDA 2799600-0790');
+                enviarSMS(numero, 'Não identificamos o pagamento do seu boleto. OTICA VISTA LINDA 2799600-0790', idBoleto);
             } else {
                 alert('Não é possível enviar SMS: número não disponível.');
             }
@@ -339,6 +371,18 @@
             border: 2px solid #ccc;
             border-radius: 4px;
         }
+
+        #historicoSMS {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        #historicoSMS li {
+            list-style-type: none;
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
@@ -371,6 +415,7 @@
         <input type="hidden" id="smsNumero">
         <button onclick="enviarSMSAvencer()">A VENCER</button>
         <button onclick="enviarSMSVencido()">VENCIDO</button>
+        <ul id="historicoSMS"></ul>
         <button id="fecharSMS" onclick="fecharAbaSMS()">Cancelar</button>
     </div>
 

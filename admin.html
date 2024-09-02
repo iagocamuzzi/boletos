@@ -126,7 +126,7 @@
 
                     const smsButton = document.createElement('button');
                     smsButton.innerText = 'SMS';
-                    smsButton.onclick = () => abrirAbaSMS(id);
+                    smsButton.onclick = () => abrirAbaSMS(id, boleto.nomeCliente);
                     acaoCell.appendChild(smsButton);
 
                     const removerButton = document.createElement('button');
@@ -202,13 +202,13 @@
             }
         };
 
-        window.abrirAbaSMS = function(idBoleto) {
-            const boletoRef = ref(database, `boletos/${idBoleto}`);
-            onValue(boletoRef, (snapshot) => {
-                const boleto = snapshot.val();
-                console.log("Boleto recuperado:", boleto);
-                if (boleto && boleto.telefone) {
-                    const numeroCelular = adicionarDDI(boleto.telefone);
+        window.abrirAbaSMS = function(idBoleto, nomeCliente) {
+            const clienteRef = ref(database, `clientes/${nomeCliente}`);
+            onValue(clienteRef, (snapshot) => {
+                const cliente = snapshot.val();
+                console.log("Cliente recuperado:", cliente);
+                if (cliente && cliente.telefone) {
+                    const numeroCelular = adicionarDDI(cliente.telefone);
                     console.log("Abrindo aba SMS com número:", numeroCelular);
                     document.getElementById('smsNumero').value = numeroCelular;
 
@@ -241,7 +241,7 @@
                         document.getElementById('abaSMS').style.display = 'block';
                     });
                 } else {
-                    console.error('Número de celular não encontrado para o boleto:', idBoleto);
+                    console.error('Número de celular não encontrado para o cliente:', nomeCliente);
                     document.getElementById('smsNumero').value = 'Número não disponível';
                 }
             });

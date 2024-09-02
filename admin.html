@@ -71,7 +71,7 @@
             }
         }
 
-        window.carregarBoletos = function(filtrarVencidos = false, filtrarSemanal = false) {
+        window.carregarBoletos = function(filtrarVencidos = false, filtrarSemanal = false, filtroBusca = '') {
             onValue(ref(database, 'boletos'), (snapshot) => {
                 const boletos = snapshot.val();
                 const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
@@ -94,6 +94,14 @@
                     }
 
                     if (filtrarSemanal && (vencimento < primeiroDiaDaSemana || vencimento > ultimoDiaDaSemana)) {
+                        continue;
+                    }
+
+                    const nomeCliente = boleto.nomeCliente.toLowerCase();
+                    const tso = boleto.tso.toLowerCase();
+                    const filtroLowerCase = filtroBusca.toLowerCase();
+
+                    if (filtroBusca && !nomeCliente.includes(filtroLowerCase) && !tso.includes(filtroLowerCase)) {
                         continue;
                     }
 
@@ -264,6 +272,11 @@
             fecharAbaSMS();
         };
 
+        window.filtrarBoletos = function() {
+            const filtroBusca = document.getElementById('inputBusca').value;
+            carregarBoletos(false, false, filtroBusca);
+        };
+
         carregarBoletos();
 
         window.filtrarVencidos = function() {
@@ -367,7 +380,7 @@
             background-color: #e53935;
         }
 
-        #inputValorPago, #inputDataPagamento {
+        #inputValorPago, #inputDataPagamento, #inputBusca {
             width: 100%;
             padding: 8px;
             margin: 10px 0;
@@ -385,10 +398,33 @@
         #historicoSMS p {
             margin: 5px 0;
         }
+
+        .busca-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .busca-container input {
+            width: 300px;
+            padding: 10px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        .busca-container button {
+            padding: 10px 20px;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
     <h1>Boletos Cadastrados</h1>
+
+    <div class="busca-container">
+        <input type="text" id="inputBusca" placeholder="Buscar por nome ou TSO">
+        <button onclick="filtrarBoletos()">Buscar</button>
+    </div>
+
     <button onclick="carregarBoletos()">Mostrar Todos os Boletos</button>
     <button onclick="filtrarVencidos()">Mostrar Boletos Vencidos</button>
     <button onclick="filtrarSemanal()">Mostrar Semanal</button>

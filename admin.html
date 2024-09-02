@@ -126,7 +126,7 @@
 
                     const smsButton = document.createElement('button');
                     smsButton.innerText = 'SMS';
-                    smsButton.onclick = () => abrirAbaSMS(id, boleto.nomeCliente);
+                    smsButton.onclick = () => abrirAbaSMS(id);
                     acaoCell.appendChild(smsButton);
 
                     const removerButton = document.createElement('button');
@@ -202,13 +202,13 @@
             }
         };
 
-        window.abrirAbaSMS = function(idBoleto, nomeCliente) {
-            const clienteRef = ref(database, `clientes/${nomeCliente}`);
-            onValue(clienteRef, (snapshot) => {
-                const cliente = snapshot.val();
-                console.log("Cliente recuperado:", cliente);
-                if (cliente && cliente.telefone) {
-                    const numeroCelular = adicionarDDI(cliente.telefone);
+        window.abrirAbaSMS = function(idBoleto) {
+            const boletoRef = ref(database, `boletos/${idBoleto}`);
+            onValue(boletoRef, (snapshot) => {
+                const boleto = snapshot.val();
+                console.log("Boleto recuperado:", boleto);
+                if (boleto && boleto.telefone) {
+                    const numeroCelular = adicionarDDI(boleto.telefone);
                     console.log("Abrindo aba SMS com número:", numeroCelular);
                     document.getElementById('smsNumero').value = numeroCelular;
 
@@ -241,7 +241,7 @@
                         document.getElementById('abaSMS').style.display = 'block';
                     });
                 } else {
-                    console.error('Número de celular não encontrado para o cliente:', nomeCliente);
+                    console.error('Número de celular não encontrado para o boleto:', idBoleto);
                     document.getElementById('smsNumero').value = 'Número não disponível';
                 }
             });
@@ -253,7 +253,7 @@
 
         window.enviarSMSAvencer = function() {
             const numero = document.getElementById('smsNumero').value;
-            const idBoleto = document.querySelector('[data-id]').getAttribute('data-id');
+            const idBoleto = document.querySelector('#abaSMS').getAttribute('data-id');
             if (numero !== 'Número não disponível') {
                 enviarSMS(numero, 'Seu boleto da OTICA VISTA LINDA vence essa semana. Caso tenha efetuado o pagamento, desconsidere esta mensagem. 2799600-0790', idBoleto, 'A Vencer');
             } else {
@@ -264,7 +264,7 @@
 
         window.enviarSMSVencido = function() {
             const numero = document.getElementById('smsNumero').value;
-            const idBoleto = document.querySelector('[data-id]').getAttribute('data-id');
+            const idBoleto = document.querySelector('#abaSMS').getAttribute('data-id');
             if (numero !== 'Número não disponível') {
                 enviarSMS(numero, 'Não identificamos o pagamento do seu boleto. OTICA VISTA LINDA 2799600-0790', idBoleto, 'Vencido');
             } else {

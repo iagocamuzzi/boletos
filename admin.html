@@ -57,12 +57,6 @@
                     const data = JSON.parse(textResponse);
                     console.log('SMS enviado com sucesso:', data);
 
-                    const historicoRef = ref(database, `boletos/${idBoleto}/historicoSMS`);
-                    push(historicoRef, {
-                        tipo,
-                        dataEnvio: new Date().toISOString()
-                    });
-
                 } catch (e) {
                     console.error('Erro ao analisar JSON:', e);
                     console.error('Resposta não é JSON válida:', textResponse);
@@ -228,34 +222,7 @@
                 console.log("Abrindo aba SMS com número:", numeroCelular);
                 document.getElementById('smsNumero').value = numeroCelular;
 
-                const historicoRef = ref(database, `boletos/${idBoleto}/historicoSMS`);
-                onValue(historicoRef, (snapshot) => {
-                    const historico = snapshot.val();
-                    const historicoContainer = document.getElementById('historicoSMS');
-                    historicoContainer.innerHTML = '';
-
-                    let aVencerCount = 0;
-                    let vencidoCount = 0;
-
-                    if (historico) {
-                        for (const key in historico) {
-                            const item = historico[key];
-                            if (item.tipo === 'A Vencer') {
-                                aVencerCount++;
-                            } else if (item.tipo === 'Vencido') {
-                                vencidoCount++;
-                            }
-                        }
-                    }
-
-                    historicoContainer.innerHTML = `
-                        <p>Histórico</p>
-                        <p>A Vencer: ${aVencerCount}</p>
-                        <p>Vencido: ${vencidoCount}</p>
-                    `;
-
-                    document.getElementById('abaSMS').style.display = 'block';
-                });
+                document.getElementById('abaSMS').style.display = 'block';
             });
         };
 
@@ -402,16 +369,6 @@
             border-radius: 4px;
         }
 
-        #historicoSMS {
-            max-height: 150px;
-            overflow-y: auto;
-            margin-top: 10px;
-        }
-
-        #historicoSMS p {
-            margin: 5px 0;
-        }
-
         .busca-container {
             margin-bottom: 20px;
             text-align: center;
@@ -466,7 +423,6 @@
         <input type="hidden" id="smsNumero">
         <button onclick="enviarSMSAvencer()">A VENCER</button>
         <button onclick="enviarSMSVencido()">VENCIDO</button>
-        <div id="historicoSMS"></div>
         <button id="fecharSMS" onclick="fecharAbaSMS()">Cancelar</button>
     </div>
 

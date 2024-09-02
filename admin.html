@@ -6,7 +6,7 @@
     <title>Boletos Cadastrados</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getDatabase, ref, onValue, update, remove, push } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        import { getDatabase, ref, onValue, update, remove, push, get } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
@@ -25,7 +25,7 @@
             if (partes.length === 3) {
                 return `${partes[2]}/${partes[1]}/${partes[0]}`;
             }
-            return data; // Caso a data já esteja formatada corretamente
+            return data;
         }
 
         function adicionarDDI(numero) {
@@ -62,6 +62,14 @@
                         tipo,
                         dataEnvio: new Date().toISOString()
                     });
+
+                    // Incrementa a contagem no histórico
+                    const countRef = ref(database, `boletos/${idBoleto}/contagemSMS/${tipo}`);
+                    get(countRef).then((snapshot) => {
+                        const count = snapshot.exists() ? snapshot.val() : 0;
+                        update(countRef, count + 1);
+                    });
+
                 } catch (e) {
                     console.error('Erro ao analisar JSON:', e);
                     console.error('Resposta não é JSON válida:', textResponse);

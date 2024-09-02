@@ -63,13 +63,6 @@
                         dataEnvio: new Date().toISOString()
                     });
 
-                    // Incrementa a contagem no histórico
-                    const countRef = ref(database, `boletos/${idBoleto}/contagemSMS/${tipo}`);
-                    get(countRef).then((snapshot) => {
-                        const count = snapshot.exists() ? snapshot.val() : 0;
-                        update(countRef, count + 1);
-                    });
-
                 } catch (e) {
                     console.error('Erro ao analisar JSON:', e);
                     console.error('Resposta não é JSON válida:', textResponse);

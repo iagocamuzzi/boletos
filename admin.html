@@ -6,7 +6,7 @@
     <title>Boletos Cadastrados</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getDatabase, ref, onValue, update, remove, push, get } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        import { getDatabase, ref, onValue, update, remove, push } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
@@ -107,7 +107,7 @@
                     }
 
                     const row = tabelaBoletos.insertRow();
-                    row.setAttribute('data-id', id);
+                    row.dataset.id = id;
 
                     row.insertCell(0).innerText = boleto.nomeCliente;
                     row.insertCell(1).innerText = boleto.tso;
@@ -126,7 +126,7 @@
 
                     const smsButton = document.createElement('button');
                     smsButton.innerText = 'SMS';
-                    smsButton.onclick = () => abrirAbaSMS(id, boleto.nomeCliente);
+                    smsButton.onclick = () => abrirAbaSMS(id);
                     acaoCell.appendChild(smsButton);
 
                     const removerButton = document.createElement('button');
@@ -202,13 +202,13 @@
             }
         };
 
-        window.abrirAbaSMS = function(idBoleto, nomeCliente) {
-            const clienteRef = ref(database, `clientes/${nomeCliente}`);
-            onValue(clienteRef, (snapshot) => {
-                const cliente = snapshot.val();
-                console.log("Cliente recuperado:", cliente);
-                if (cliente && cliente.telefone) {
-                    const numeroCelular = adicionarDDI(cliente.telefone);
+        window.abrirAbaSMS = function(idBoleto) {
+            const boletoRef = ref(database, `boletos/${idBoleto}`);
+            onValue(boletoRef, (snapshot) => {
+                const boleto = snapshot.val();
+                console.log("Boleto recuperado:", boleto);
+                if (boleto && boleto.telefone) {
+                    const numeroCelular = adicionarDDI(boleto.telefone);
                     console.log("Abrindo aba SMS com número:", numeroCelular);
                     document.getElementById('smsNumero').value = numeroCelular;
 
@@ -241,7 +241,7 @@
                         document.getElementById('abaSMS').style.display = 'block';
                     });
                 } else {
-                    console.error('Número de celular não encontrado para o cliente:', nomeCliente);
+                    console.error('Número de celular não encontrado para o boleto:', idBoleto);
                     document.getElementById('smsNumero').value = 'Número não disponível';
                 }
             });

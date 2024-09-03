@@ -56,17 +56,33 @@
             }
         }
 
+        function calcularParcelas() {
+            const valorTotal = parseFloat(document.getElementById('valorTotal').value.trim());
+            const quantidadeParcelas = parseInt(document.getElementById('quantidadeParcelas').value.trim());
+
+            if (!isNaN(valorTotal) && !isNaN(quantidadeParcelas) && quantidadeParcelas > 0) {
+                const valorParcela = (valorTotal / quantidadeParcelas).toFixed(2);
+                document.getElementById('valorParcela').value = `R$ ${valorParcela}`;
+            } else {
+                document.getElementById('valorParcela').value = '';
+            }
+        }
+
         document.getElementById('nomeCliente').addEventListener('blur', carregarDadosCliente);
+        document.getElementById('valorTotal').addEventListener('input', calcularParcelas);
+        document.getElementById('quantidadeParcelas').addEventListener('input', calcularParcelas);
 
         document.getElementById('cadastrarBoleto').addEventListener('click', async () => {
             const nomeCliente = document.getElementById('nomeCliente').value.trim();
             const telefone = document.getElementById('telefoneCliente').value.trim();
             const tso = document.getElementById('tso').value.trim();
-            const valorParcela = document.getElementById('valorParcela').value.trim();
+            const valorTotal = parseFloat(document.getElementById('valorTotal').value.trim());
+            const quantidadeParcelas = parseInt(document.getElementById('quantidadeParcelas').value.trim());
             const vencimento = document.getElementById('vencimento').value.trim();
-            const quantidadeParcelas = document.getElementById('quantidadeParcelas').value.trim();
 
-            if (nomeCliente && telefone && tso && valorParcela && vencimento && quantidadeParcelas) {
+            if (nomeCliente && telefone && tso && !isNaN(valorTotal) && vencimento && quantidadeParcelas > 0) {
+                const valorParcela = (valorTotal / quantidadeParcelas).toFixed(2);
+
                 for (let i = 0; i < quantidadeParcelas; i++) {
                     const vencimentoParcela = new Date(vencimento);
                     vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
@@ -76,7 +92,7 @@
                         nomeCliente,
                         telefone,
                         tso: `${tso}/${i + 1}`,
-                        valorParcela,
+                        valorParcela: `R$ ${valorParcela}`,
                         vencimento: vencimentoParcela.toISOString().split('T')[0],
                         status: 'pendente'
                     };
@@ -89,8 +105,9 @@
 
                 alert('Boletos cadastrados com sucesso!');
                 document.getElementById('formCadastroBoleto').reset();
+                calcularParcelas(); // Limpar o valor da parcela
             } else {
-                alert('Por favor, preencha todos os campos.');
+                alert('Por favor, preencha todos os campos corretamente.');
             }
         });
     </script>
@@ -101,34 +118,47 @@
             color: #333;
             margin: 0;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
         }
 
         h1 {
             text-align: center;
             margin-bottom: 20px;
+            font-size: 24px;
+            color: #6200ea;
         }
 
         form {
-            max-width: 600px;
-            margin: 0 auto;
+            max-width: 400px;
+            width: 100%;
             background-color: #fff;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
 
-        input[type="text"], input[type="date"] {
+        input[type="text"], input[type="date"], input[type="number"] {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
             border: 2px solid #ccc;
-            border-radius: 4px;
+            border-radius: 6px;
             box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus {
+            border-color: #6200ea;
         }
 
         button {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             background-color: #6200ea;
             color: #fff;
             border: none;
@@ -136,10 +166,18 @@
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s;
+            margin-top: 10px;
         }
 
         button:hover {
             background-color: #3700b3;
+        }
+
+        #valorParcela {
+            background-color: #f4f4f9;
+            border: none;
+            color: #666;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -150,8 +188,9 @@
         <input type="text" id="nomeCliente" placeholder="Nome do Cliente" onblur="carregarDadosCliente()">
         <input type="text" id="telefoneCliente" placeholder="Telefone do Cliente">
         <input type="text" id="tso" placeholder="TSO">
-        <input type="text" id="valorParcela" placeholder="Valor da Parcela">
+        <input type="number" id="valorTotal" placeholder="Valor Total">
         <input type="number" id="quantidadeParcelas" placeholder="Quantidade de Parcelas">
+        <input type="text" id="valorParcela" placeholder="Valor da Parcela" readonly>
         <input type="date" id="vencimento" placeholder="Data de Vencimento">
         <button type="button" id="cadastrarBoleto">Cadastrar Boleto</button>
     </form>

@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadastro de Boletos</title>
     <script type="module">
-        // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getDatabase, ref, push, set, get, child } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        import { getDatabase, ref, push, update, get } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
 
-        // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyC1jX6T23oV_NHTjE_z4ZcWQop2BWDVxs",
+            apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
             authDomain: "boletosvistalinda.firebaseapp.com",
             projectId: "boletosvistalinda",
             storageBucket: "boletosvistalinda.appspot.com",
@@ -19,82 +17,59 @@
             appId: "1:809943988538:web:4e25ccb03f5c940600f803"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // Função para abrir a janela flutuante de cadastro
-        window.abrirCadastroBoleto = function() {
-            document.getElementById('janelaCadastro').style.display = 'block';
-        };
+        async function armazenarTelefoneCliente(nomeCliente, telefoneNovo) {
+            const clienteRef = ref(database, `clientes/${nomeCliente}`);
+            const clienteSnapshot = await get(clienteRef);
 
-        // Função para fechar a janela flutuante
-        window.fecharCadastroBoleto = function() {
-            document.getElementById('janelaCadastro').style.display = 'none';
-            document.getElementById('formCadastro').reset();
-            document.getElementById('formBoleto').reset();
-            document.getElementById('etapa2').style.display = 'none';
-        };
+            if (clienteSnapshot.exists()) {
+                const cliente = clienteSnapshot.val();
+                let telefones = cliente.telefones || [];
 
-        // Função para buscar cliente
-        window.buscarCliente = function() {
-            const nomeCliente = document.getElementById('nomeCliente').value;
-
-            if (nomeCliente) {
-                const dbRef = ref(getDatabase());
-                get(child(dbRef, `clientes/${nomeCliente}`)).then((snapshot) => {
-                    if (snapshot.exists()) {
-                        const cliente = snapshot.val();
-                        document.getElementById('telefoneCliente').value = cliente.telefone;
-                        document.getElementById('etapa2').style.display = 'block';
-                    } else {
-                        document.getElementById('etapa2').style.display = 'block';
-                    }
-                }).catch((error) => {
-                    console.error(error);
-                });
+                // Se o telefone não estiver na lista, adicioná-lo
+                if (!telefones.includes(telefoneNovo)) {
+                    telefones.push(telefoneNovo);
+                    await update(clienteRef, { telefones });
+                    console.log("Telefone atualizado com sucesso.");
+                }
+            } else {
+                // Se o cliente não existir, criar um novo com o telefone
+                await update(clienteRef, { telefones: [telefoneNovo] });
+                console.log("Cliente e telefone adicionados com sucesso.");
             }
-        };
+        }
 
-        // Função para salvar o cliente e o boleto
-        window.cadastrarBoleto = function() {
-            const nomeCliente = document.getElementById('nomeCliente').value;
-            const telefoneCliente = document.getElementById('telefoneCliente').value;
+        document.getElementById('cadastrarBoleto').addEventListener('click', async () => {
+            const nomeCliente = document.getElementById('nomeCliente').value.trim();
+            const telefone = document.getElementById('telefoneCliente').value.trim();
+            const tso = document.getElementById('tso').value.trim();
+            const valorParcela = document.getElementById('valorParcela').value.trim();
+            const vencimento = document.getElementById('vencimento').value.trim();
 
-            const clienteData = {
-                telefone: telefoneCliente
-            };
-
-            const valorTotal = parseFloat(document.getElementById('valorTotal').value);
-            const quantidadeParcelas = parseInt(document.getElementById('quantidadeParcelas').value);
-            const tso = document.getElementById('tso').value;
-            const vencimento = document.getElementById('vencimento').value;
-            const valorParcela = valorTotal / quantidadeParcelas;
-
-            // Salvar ou atualizar cliente
-            set(ref(database, 'clientes/' + nomeCliente), clienteData);
-
-            // Salvar boletos
-            for (let i = 0; i < quantidadeParcelas; i++) {
-                const dataVencimento = new Date(vencimento);
-                dataVencimento.setMonth(dataVencimento.getMonth() + i);
-                const dataFormatada = dataVencimento.toISOString().split('T')[0];
-
-                const boletoData = {
-                    nomeCliente: nomeCliente,
-                    tso: tso,
-                    valorParcela: valorParcela.toFixed(2),
-                    vencimento: dataFormatada,
+            if (nomeCliente && telefone && tso && valorParcela && vencimento) {
+                const novoBoletoRef = push(ref(database, 'boletos'));
+                const novoBoleto = {
+                    nomeCliente,
+                    telefone,
+                    tso,
+                    valorParcela,
+                    vencimento,
                     status: 'pendente'
                 };
 
-                const newBoletoKey = push(ref(database, 'boletos')).key;
-                set(ref(database, 'boletos/' + newBoletoKey), boletoData);
-            }
+                await set(novoBoletoRef, novoBoleto);
 
-            alert('Boleto cadastrado com sucesso!');
-            fecharCadastroBoleto();
-        };
+                // Armazenar o telefone do cliente no banco de dados
+                await armazenarTelefoneCliente(nomeCliente, telefone);
+
+                alert('Boleto cadastrado com sucesso!');
+                document.getElementById('formCadastroBoleto').reset();
+            } else {
+                alert('Por favor, preencha todos os campos.');
+            }
+        });
     </script>
     <style>
         body {
@@ -102,27 +77,38 @@
             background-color: #f4f4f9;
             color: #333;
             margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            padding: 20px;
         }
 
-        .container {
+        h1 {
             text-align: center;
-        }
-
-        h3 {
-            font-size: 24px;
             margin-bottom: 20px;
         }
 
+        form {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="text"], input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
         button {
+            width: 100%;
+            padding: 10px;
             background-color: #6200ea;
             color: #fff;
             border: none;
-            padding: 15px 30px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
@@ -132,88 +118,18 @@
         button:hover {
             background-color: #3700b3;
         }
-
-        #janelaCadastro {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 400px;
-            padding: 30px;
-            background-color: #fff;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            z-index: 1000;
-        }
-
-        #janelaCadastro input {
-            width: 100%;
-            margin-bottom: 15px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        #janelaCadastro label {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 5px;
-            display: block;
-        }
-
-        #janelaCadastro .fechar {
-            background-color: #f44336;
-            margin-top: 10px;
-        }
-
-        #janelaCadastro .fechar:hover {
-            background-color: #d32f2f;
-        }
-
-        #etapa2 {
-            display: none;
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <button onclick="abrirCadastroBoleto()">Cadastrar Boleto</button>
-    </div>
+    <h1>Cadastro de Boletos</h1>
 
-    <!-- Janela Flutuante para Cadastro -->
-    <div id="janelaCadastro">
-        <h3>Cadastro de Boleto</h3>
-        
-        <!-- Etapa 1: Dados do Cliente -->
-        <div id="etapa1">
-            <label for="nomeCliente">Nome do Cliente:</label>
-            <input type="text" id="nomeCliente" onblur="buscarCliente()" placeholder="Digite o nome do cliente" required>
-            
-            <label for="telefoneCliente">Telefone:</label>
-            <input type="text" id="telefoneCliente" placeholder="(99) 99999-9999" required>
-        </div>
-
-        <!-- Etapa 2: Dados do Boleto -->
-        <div id="etapa2">
-            <label for="valorTotal">Valor Total (R$):</label>
-            <input type="number" id="valorTotal" step="0.01" placeholder="Digite o valor total" required>
-
-            <label for="quantidadeParcelas">Quantidade de Parcelas:</label>
-            <input type="number" id="quantidadeParcelas" min="1" placeholder="Digite a quantidade de parcelas" required>
-
-            <label for="tso">TSO:</label>
-            <input type="text" id="tso" placeholder="Digite o TSO" required>
-
-            <label for="vencimento">Vencimento da Primeira Parcela:</label>
-            <input type="date" id="vencimento" required>
-
-            <button onclick="cadastrarBoleto()">Cadastrar Boleto</button>
-        </div>
-
-        <button class="fechar" onclick="fecharCadastroBoleto()">Fechar</button>
-    </div>
+    <form id="formCadastroBoleto">
+        <input type="text" id="nomeCliente" placeholder="Nome do Cliente">
+        <input type="text" id="telefoneCliente" placeholder="Telefone do Cliente">
+        <input type="text" id="tso" placeholder="TSO">
+        <input type="text" id="valorParcela" placeholder="Valor da Parcela">
+        <input type="date" id="vencimento" placeholder="Data de Vencimento">
+        <button type="button" id="cadastrarBoleto">Cadastrar Boleto</button>
+    </form>
 </body>
 </html>

@@ -6,7 +6,7 @@
     <title>Cadastro de Boletos</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getDatabase, ref, push, update, get } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        import { getDatabase, ref, push, update, get, set } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
@@ -36,10 +36,27 @@
                 }
             } else {
                 // Se o cliente não existir, criar um novo com o telefone
-                await update(clienteRef, { telefones: [telefoneNovo] });
+                await set(clienteRef, { telefones: [telefoneNovo] });
                 console.log("Cliente e telefone adicionados com sucesso.");
             }
         }
+
+        async function carregarDadosCliente() {
+            const nomeCliente = document.getElementById('nomeCliente').value.trim();
+            if (nomeCliente) {
+                const clienteRef = ref(database, `clientes/${nomeCliente}`);
+                const clienteSnapshot = await get(clienteRef);
+
+                if (clienteSnapshot.exists()) {
+                    const cliente = clienteSnapshot.val();
+                    if (cliente.telefones && cliente.telefones.length > 0) {
+                        document.getElementById('telefoneCliente').value = cliente.telefones[0];
+                    }
+                }
+            }
+        }
+
+        document.getElementById('nomeCliente').addEventListener('blur', carregarDadosCliente);
 
         document.getElementById('cadastrarBoleto').addEventListener('click', async () => {
             const nomeCliente = document.getElementById('nomeCliente').value.trim();
@@ -47,24 +64,30 @@
             const tso = document.getElementById('tso').value.trim();
             const valorParcela = document.getElementById('valorParcela').value.trim();
             const vencimento = document.getElementById('vencimento').value.trim();
+            const quantidadeParcelas = document.getElementById('quantidadeParcelas').value.trim();
 
-            if (nomeCliente && telefone && tso && valorParcela && vencimento) {
-                const novoBoletoRef = push(ref(database, 'boletos'));
-                const novoBoleto = {
-                    nomeCliente,
-                    telefone,
-                    tso,
-                    valorParcela,
-                    vencimento,
-                    status: 'pendente'
-                };
+            if (nomeCliente && telefone && tso && valorParcela && vencimento && quantidadeParcelas) {
+                for (let i = 0; i < quantidadeParcelas; i++) {
+                    const vencimentoParcela = new Date(vencimento);
+                    vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
 
-                await set(novoBoletoRef, novoBoleto);
+                    const novoBoletoRef = push(ref(database, 'boletos'));
+                    const novoBoleto = {
+                        nomeCliente,
+                        telefone,
+                        tso: `${tso}/${i + 1}`,
+                        valorParcela,
+                        vencimento: vencimentoParcela.toISOString().split('T')[0],
+                        status: 'pendente'
+                    };
+
+                    await set(novoBoletoRef, novoBoleto);
+                }
 
                 // Armazenar o telefone do cliente no banco de dados
                 await armazenarTelefoneCliente(nomeCliente, telefone);
 
-                alert('Boleto cadastrado com sucesso!');
+                alert('Boletos cadastrados com sucesso!');
                 document.getElementById('formCadastroBoleto').reset();
             } else {
                 alert('Por favor, preencha todos os campos.');
@@ -124,10 +147,11 @@
     <h1>Cadastro de Boletos</h1>
 
     <form id="formCadastroBoleto">
-        <input type="text" id="nomeCliente" placeholder="Nome do Cliente">
+        <input type="text" id="nomeCliente" placeholder="Nome do Cliente" onblur="carregarDadosCliente()">
         <input type="text" id="telefoneCliente" placeholder="Telefone do Cliente">
         <input type="text" id="tso" placeholder="TSO">
         <input type="text" id="valorParcela" placeholder="Valor da Parcela">
+        <input type="number" id="quantidadeParcelas" placeholder="Quantidade de Parcelas">
         <input type="date" id="vencimento" placeholder="Data de Vencimento">
         <button type="button" id="cadastrarBoleto">Cadastrar Boleto</button>
     </form>

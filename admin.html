@@ -6,7 +6,7 @@
     <title>Boletos Cadastrados</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getDatabase, ref, onValue, update, remove, push, get } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        import { getDatabase, ref, onValue, update, remove, push, get, set } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
@@ -63,6 +63,27 @@
                 }
             } catch (error) {
                 console.error('Erro ao enviar SMS:', error);
+            }
+        }
+
+        async function armazenarTelefoneCliente(nomeCliente, telefoneNovo) {
+            const clienteRef = ref(database, `clientes/${nomeCliente}`);
+            const clienteSnapshot = await get(clienteRef);
+
+            if (clienteSnapshot.exists()) {
+                const cliente = clienteSnapshot.val();
+                let telefones = cliente.telefones || [];
+
+                // Se o telefone não estiver na lista, adicioná-lo
+                if (!telefones.includes(telefoneNovo)) {
+                    telefones.push(telefoneNovo);
+                    await update(clienteRef, { telefones });
+                    console.log("Telefone atualizado com sucesso.");
+                }
+            } else {
+                // Se o cliente não existir, criar um novo com o telefone
+                await set(clienteRef, { telefones: [telefoneNovo] });
+                console.log("Cliente e telefone adicionados com sucesso.");
             }
         }
 
@@ -207,21 +228,23 @@
                 if (!numeroCelular) {
                     const clienteSnapshot = await get(ref(database, `clientes/${nomeCliente}`));
                     const cliente = clienteSnapshot.val();
-                    if (cliente && cliente.telefone) {
-                        numeroCelular = cliente.telefone;
+                    if (cliente && cliente.telefones) {
+                        // Exibe uma lista para escolher o telefone
+                        const selectElement = document.getElementById('smsNumero');
+                        selectElement.innerHTML = ''; // Limpar a seleção existente
+                        cliente.telefones.forEach((telefone) => {
+                            const option = document.createElement('option');
+                            option.value = adicionarDDI(telefone);
+                            option.text = telefone;
+                            selectElement.appendChild(option);
+                        });
                     } else {
                         console.error('Número de celular não encontrado para o cliente:', nomeCliente);
                         numeroCelular = 'Número não disponível';
                     }
                 }
 
-                if (numeroCelular !== 'Número não disponível') {
-                    numeroCelular = adicionarDDI(numeroCelular);
-                }
-
                 console.log("Abrindo aba SMS com número:", numeroCelular);
-                document.getElementById('smsNumero').value = numeroCelular;
-
                 document.getElementById('abaSMS').style.display = 'block';
             });
         };
@@ -369,6 +392,18 @@
             border-radius: 4px;
         }
 
+        #smsNumero {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            appearance: none; /* Remover estilo padrão de dropdown */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+
         .busca-container {
             margin-bottom: 20px;
             text-align: center;
@@ -420,7 +455,7 @@
     <!-- Aba flutuante de SMS -->
     <div id="abaSMS">
         <h3>Enviar SMS</h3>
-        <input type="hidden" id="smsNumero">
+        <select id="smsNumero"></select>
         <button onclick="enviarSMSAvencer()">A VENCER</button>
         <button onclick="enviarSMSVencido()">VENCIDO</button>
         <button id="fecharSMS" onclick="fecharAbaSMS()">Cancelar</button>

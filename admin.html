@@ -200,6 +200,9 @@
             onValue(boletoRef, (snapshot) => {
                 const boleto = snapshot.val();
 
+                // Exibir todo o conteúdo do boleto no console para diagnóstico
+                console.log("Boleto recuperado:", boleto);  
+
                 if (boleto && boleto.telefone) {
                     const numeroCelular = adicionarDDI(boleto.telefone);
 

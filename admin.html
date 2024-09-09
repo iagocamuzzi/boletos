@@ -20,14 +20,7 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        function formatarData(data) {
-            const partes = data.split('-');
-            if (partes.length === 3) {
-                return `${partes[2]}/${partes[1]}/${partes[0]}`;
-            }
-            return data;
-        }
-
+        // Função para adicionar DDI ao número
         function adicionarDDI(numero) {
             if (!numero || numero === 'undefined') {
                 console.error('Número de celular não definido.');
@@ -40,44 +33,25 @@
             return `55${numero}`;
         }
 
-        async function enviarSMS(numero, mensagem, idBoleto, tipo) {
-            try {
-                const response = await fetch('/api/sendSMS', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ numero, mensagem })
-                });
-
-                const textResponse = await response.text();
-                console.log('Resposta recebida como texto:', textResponse);
-
-                try {
-                    const data = JSON.parse(textResponse);
-                    console.log('SMS enviado com sucesso:', data);
-                } catch (e) {
-                    console.error('Erro ao analisar JSON:', e);
-                    console.error('Resposta não é JSON válida:', textResponse);
-                }
-            } catch (error) {
-                console.error('Erro ao enviar SMS:', error);
-            }
-        }
-
+        // Função para cadastrar um novo boleto
         function cadastrarBoleto() {
             const nomeCliente = document.getElementById('nomeCliente').value;
             const tso = document.getElementById('tso').value;
             const valorParcela = document.getElementById('valorParcela').value;
             const vencimento = document.getElementById('vencimento').value;
-            const telefone = document.getElementById('telefone').value; // Capturando o telefone
+            const telefone = document.getElementById('telefone').value;
+
+            if (!telefone) {
+                alert('O campo de telefone é obrigatório.');
+                return;
+            }
 
             const novoBoleto = {
                 nomeCliente,
                 tso,
                 valorParcela,
                 vencimento,
-                telefone,  // Adicionando o telefone no cadastro
+                telefone,  // Salvando o telefone
                 status: 'pendente'
             };
 
@@ -92,39 +66,15 @@
             });
         }
 
+        // Função para carregar os boletos da base de dados
         window.carregarBoletos = function(filtrarVencidos = false, filtrarSemanal = false, filtroBusca = '') {
             onValue(ref(database, 'boletos'), (snapshot) => {
                 const boletos = snapshot.val();
                 const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
                 tabelaBoletos.innerHTML = '';
 
-                const hoje = new Date();
-                hoje.setHours(0, 0, 0, 0);
-
-                const primeiroDiaDaSemana = new Date(hoje);
-                primeiroDiaDaSemana.setDate(hoje.getDate() - hoje.getDay() + 1); // Segunda-feira
-                const ultimoDiaDaSemana = new Date(primeiroDiaDaSemana);
-                ultimoDiaDaSemana.setDate(primeiroDiaDaSemana.getDate() + 6); // Domingo
-
                 for (const id in boletos) {
                     const boleto = boletos[id];
-                    const vencimento = new Date(boleto.vencimento);
-
-                    if (filtrarVencidos && (vencimento >= hoje || boleto.status === 'pago')) {
-                        continue;
-                    }
-
-                    if (filtrarSemanal && (vencimento < primeiroDiaDaSemana || vencimento > ultimoDiaDaSemana)) {
-                        continue;
-                    }
-
-                    const nomeCliente = boleto.nomeCliente.toLowerCase();
-                    const tso = boleto.tso.toLowerCase();
-                    const filtroLowerCase = filtroBusca.toLowerCase();
-
-                    if (filtroBusca && !nomeCliente.includes(filtroLowerCase) && !tso.includes(filtroLowerCase)) {
-                        continue;
-                    }
 
                     const row = tabelaBoletos.insertRow();
                     row.dataset.id = id;
@@ -133,8 +83,8 @@
                     row.insertCell(1).innerText = boleto.tso;
                     row.insertCell(2).innerText = `R$ ${boleto.valorParcela}`;
                     row.insertCell(3).innerText = boleto.valorPago ? `R$ ${boleto.valorPago}` : '-';
-                    row.insertCell(4).innerText = formatarData(boleto.vencimento);
-                    row.insertCell(5).innerText = boleto.dataPagamento ? formatarData(boleto.dataPagamento) : '-';
+                    row.insertCell(4).innerText = boleto.vencimento;
+                    row.insertCell(5).innerText = boleto.dataPagamento ? boleto.dataPagamento : '-';
                     row.insertCell(6).innerText = boleto.status.charAt(0).toUpperCase() + boleto.status.slice(1);
                     const acaoCell = row.insertCell(7);
                     acaoCell.classList.add('acoes');
@@ -157,71 +107,7 @@
             });
         };
 
-        window.abrirAbaFlutuante = function(id, boleto) {
-            const abaFlutuante = document.getElementById('abaFlutuante');
-            document.getElementById('infoValorParcela').innerText = `Valor da Parcela: R$ ${boleto.valorParcela}`;
-            document.getElementById('inputValorPago').value = boleto.valorPago || '';
-            document.getElementById('inputDataPagamento').value = boleto.dataPagamento || '';
-
-            const salvarButton = document.getElementById('salvarBaixa');
-            salvarButton.onclick = () => salvarBaixa(id);
-
-            const reabrirButton = document.getElementById('reabrirParcela');
-            reabrirButton.onclick = () => reabrirParcela(id);
-
-            abaFlutuante.style.display = 'block';
-        };
-
-        window.fecharAbaFlutuante = function() {
-            document.getElementById('abaFlutuante').style.display = 'none';
-        };
-
-        window.salvarBaixa = function(id) {
-            const valorPago = document.getElementById('inputValorPago').value;
-            const dataPagamento = document.getElementById('inputDataPagamento').value;
-
-            const partesData = dataPagamento.split('/');
-            const dataFormatada = `${partesData[2]}-${partesData[1]}-${partesData[0]}`;
-
-            update(ref(database, 'boletos/' + id), {
-                valorPago,
-                dataPagamento: dataFormatada,
-                status: 'pago'
-            }).then(() => {
-                alert('Baixa salva com sucesso!');
-                fecharAbaFlutuante();
-                carregarBoletos();
-            }).catch((error) => {
-                alert('Erro ao salvar a baixa: ' + error.message);
-            });
-        };
-
-        window.reabrirParcela = function(id) {
-            update(ref(database, 'boletos/' + id), {
-                valorPago: null,
-                dataPagamento: null,
-                status: 'pendente'
-            }).then(() => {
-                alert('Parcela reaberta com sucesso!');
-                fecharAbaFlutuante();
-                carregarBoletos();
-            }).catch((error) => {
-                alert('Erro ao reabrir a parcela: ' + error.message);
-            });
-        };
-
-        window.removerBoleto = function(id) {
-            const confirmacao = confirm("Tem certeza de que deseja remover este boleto?");
-            if (confirmacao) {
-                remove(ref(database, 'boletos/' + id)).then(() => {
-                    alert('Boleto removido com sucesso!');
-                    carregarBoletos();
-                }).catch((error) => {
-                    alert('Erro ao remover o boleto: ' + error.message);
-                });
-            }
-        };
-
+        // Função para abrir a aba SMS com o número do telefone
         window.abrirAbaSMS = function(idBoleto) {
             const boletoRef = ref(database, `boletos/${idBoleto}`);
             onValue(boletoRef, (snapshot) => {
@@ -251,9 +137,8 @@
 
         window.enviarSMSAvencer = function() {
             const numero = document.getElementById('smsNumero').innerText;
-            const idBoleto = document.querySelector('[data-id]').getAttribute('data-id');
             if (numero !== 'Número não disponível') {
-                enviarSMS(numero, 'Seu boleto da OTICA VISTA LINDA vence essa semana. Caso tenha efetuado o pagamento, desconsidere esta mensagem. 2799600-0790', idBoleto, 'A Vencer');
+                enviarSMS(numero, 'Seu boleto da OTICA VISTA LINDA vence essa semana. Caso tenha efetuado o pagamento, desconsidere esta mensagem.');
             } else {
                 alert('Não é possível enviar SMS: número não disponível.');
             }
@@ -262,29 +147,55 @@
 
         window.enviarSMSVencido = function() {
             const numero = document.getElementById('smsNumero').innerText;
-            const idBoleto = document.querySelector('[data-id]').getAttribute('data-id');
             if (numero !== 'Número não disponível') {
-                enviarSMS(numero, 'Não identificamos o pagamento do seu boleto. OTICA VISTA LINDA 2799600-0790', idBoleto, 'Vencido');
+                enviarSMS(numero, 'Não identificamos o pagamento do seu boleto. OTICA VISTA LINDA.');
             } else {
                 alert('Não é possível enviar SMS: número não disponível.');
             }
             fecharAbaSMS();
         };
 
-        window.filtrarBoletos = function() {
-            const filtroBusca = document.getElementById('inputBusca').value;
-            carregarBoletos(false, false, filtroBusca);
+        // Função para enviar SMS
+        async function enviarSMS(numero, mensagem) {
+            try {
+                const response = await fetch('/api/sendSMS', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ numero, mensagem })
+                });
+
+                const textResponse = await response.text();
+                console.log('Resposta recebida como texto:', textResponse);
+
+                try {
+                    const data = JSON.parse(textResponse);
+                    console.log('SMS enviado com sucesso:', data);
+                } catch (e) {
+                    console.error('Erro ao analisar JSON:', e);
+                    console.error('Resposta não é JSON válida:', textResponse);
+                }
+            } catch (error) {
+                console.error('Erro ao enviar SMS:', error);
+            }
+        }
+
+        // Função para remover um boleto
+        window.removerBoleto = function(id) {
+            const confirmacao = confirm("Tem certeza de que deseja remover este boleto?");
+            if (confirmacao) {
+                remove(ref(database, 'boletos/' + id)).then(() => {
+                    alert('Boleto removido com sucesso!');
+                    carregarBoletos();
+                }).catch((error) => {
+                    alert('Erro ao remover o boleto: ' + error.message);
+                });
+            }
         };
 
-        carregarBoletos();
+        carregarBoletos(); // Carregar os boletos ao abrir a página
 
-        window.filtrarVencidos = function() {
-            carregarBoletos(true);
-        };
-
-        window.filtrarSemanal = function() {
-            carregarBoletos(false, true);
-        };
     </script>
     <style>
         body {
@@ -292,7 +203,6 @@
             background-color: #f4f4f9;
             color: #333;
             margin: 0;
-            padding: 0;
             padding: 20px;
         }
 
@@ -311,7 +221,6 @@
             font-size: 14px;
             margin-right: 5px;
             transition: background-color 0.3s;
-            white-space: nowrap;
         }
 
         button:hover {
@@ -328,7 +237,6 @@
             border: 1px solid #ddd;
             padding: 10px;
             text-align: left;
-            white-space: nowrap;
         }
 
         th {
@@ -339,10 +247,9 @@
         .acoes {
             display: flex;
             gap: 5px;
-            flex-wrap: nowrap;
         }
 
-        #abaSMS, #abaFlutuante {
+        #abaSMS {
             display: none;
             position: fixed;
             top: 50%;
@@ -356,36 +263,10 @@
             border-radius: 8px;
         }
 
-        #abaSMS button, #abaFlutuante button {
+        #abaSMS button {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-
-        #abaSMS button:hover, #abaFlutuante button:hover {
-            background-color: #45a049;
-        }
-
-        #fecharSMS, #fecharAbaFlutuante {
-            background-color: #f44336;
-        }
-
-        #fecharSMS:hover, #fecharAbaFlutuante:hover {
-            background-color: #e53935;
-        }
-
-        #inputValorPago, #inputDataPagamento, #inputBusca {
-            width: 100%;
-            padding: 8px;
-            margin: 10px 0;
-            box-sizing: border-box;
-            border: 2px solid #ccc;
-            border-radius: 4px;
         }
 
         #smsNumero {
@@ -393,42 +274,16 @@
             padding: 8px;
             margin: 10px 0;
             box-sizing: border-box;
-            border: none;
             background-color: #f4f4f9;
             color: #666;
+            text-align: center;
             font-weight: bold;
-            text-align: center;
         }
 
-        .busca-container {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .busca-container input {
-            width: 300px;
-            padding: 10px;
-            font-size: 16px;
-            margin-right: 10px;
-        }
-
-        .busca-container button {
-            padding: 10px 20px;
-            font-size: 16px;
-        }
     </style>
 </head>
 <body>
     <h1>Boletos Cadastrados</h1>
-
-    <div class="busca-container">
-        <input type="text" id="inputBusca" placeholder="Buscar por nome ou TSO">
-        <button onclick="filtrarBoletos()">Buscar</button>
-    </div>
-
-    <button onclick="carregarBoletos()">Mostrar Todos os Boletos</button>
-    <button onclick="filtrarVencidos()">Mostrar Boletos Vencidos</button>
-    <button onclick="filtrarSemanal()">Mostrar Semanal</button>
 
     <table id="tabelaBoletos">
         <thead>
@@ -440,7 +295,7 @@
                 <th>Vencimento</th>
                 <th>Data de Pagamento</th>
                 <th>Status</th>
-                <th>Ação</th>
+                <th>Ações</th>
             </tr>
         </thead>
         <tbody>
@@ -448,24 +303,13 @@
         </tbody>
     </table>
 
-    <!-- Aba flutuante de SMS -->
+    <!-- Aba de envio de SMS -->
     <div id="abaSMS">
         <h3>Enviar SMS</h3>
         <div id="smsNumero"></div>
         <button onclick="enviarSMSAvencer()">A VENCER</button>
         <button onclick="enviarSMSVencido()">VENCIDO</button>
-        <button id="fecharSMS" onclick="fecharAbaSMS()">Cancelar</button>
-    </div>
-
-    <!-- Aba flutuante de informações -->
-    <div id="abaFlutuante">
-        <h3>Informações do Boleto</h3>
-        <p id="infoValorParcela"></p>
-        <input type="text" id="inputValorPago" placeholder="Valor Pago">
-        <input type="text" id="inputDataPagamento" placeholder="Data de Pagamento (DD/MM/AAAA)">
-        <button id="salvarBaixa">Salvar Baixa</button>
-        <button id="reabrirParcela">Reabrir Parcela</button>
-        <button id="fecharAbaFlutuante" onclick="fecharAbaFlutuante()">Fechar</button>
+        <button onclick="fecharAbaSMS()">Cancelar</button>
     </div>
 </body>
 </html>

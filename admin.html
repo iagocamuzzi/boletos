@@ -29,9 +29,9 @@
         }
 
         function adicionarDDI(numero) {
-            if (!numero) {
+            if (!numero || numero === 'undefined') {
                 console.error('Número de celular não definido.');
-                return 'Número não definido';
+                return 'Número não disponível';
             }
 
             if (numero.startsWith('55')) {
@@ -201,7 +201,11 @@
                 const boleto = snapshot.val();
                 const numeroCelular = adicionarDDI(boleto.telefone);
 
-                console.log("Abrindo aba SMS com número:", numeroCelular);
+                if (numeroCelular === 'Número não disponível') {
+                    console.error(`Número de celular não encontrado para o boleto: ${idBoleto}`);
+                } else {
+                    console.log("Abrindo aba SMS com número:", numeroCelular);
+                }
 
                 document.getElementById('smsNumero').innerText = numeroCelular;
                 document.getElementById('abaSMS').style.display = 'block';

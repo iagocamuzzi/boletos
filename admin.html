@@ -6,7 +6,7 @@
     <title>Boletos Cadastrados</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        import { getDatabase, ref, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
@@ -20,11 +20,18 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // Função para adicionar DDI ao número
+        function formatarData(data) {
+            const partes = data.split('-');
+            if (partes.length === 3) {
+                return `${partes[2]}/${partes[1]}/${partes[0]}`;
+            }
+            return data;
+        }
+
         function adicionarDDI(numero) {
-            if (!numero || numero === 'undefined') {
+            if (!numero) {
                 console.error('Número de celular não definido.');
-                return 'Número não disponível';
+                return 'Número não definido';
             }
 
             if (numero.startsWith('55')) {
@@ -33,135 +40,7 @@
             return `55${numero}`;
         }
 
-        // Função para cadastrar um novo boleto
-        function cadastrarBoleto() {
-            const nomeCliente = document.getElementById('nomeCliente').value;
-            const tso = document.getElementById('tso').value;
-            const valorParcela = document.getElementById('valorParcela').value;
-            const vencimento = document.getElementById('vencimento').value;
-            const telefone = document.getElementById('telefone').value;
-
-            if (!telefone) {
-                alert('O campo de telefone é obrigatório.');
-                return;
-            }
-
-            const novoBoleto = {
-                nomeCliente,
-                tso,
-                valorParcela,
-                vencimento,
-                telefone,  // Salvando o telefone
-                status: 'pendente'
-            };
-
-            const novoBoletoRef = ref(database, 'boletos').push();
-            set(novoBoletoRef, novoBoleto)
-            .then(() => {
-                alert('Boleto cadastrado com sucesso!');
-                carregarBoletos();
-            })
-            .catch((error) => {
-                alert('Erro ao cadastrar boleto: ' + error.message);
-            });
-        }
-
-        // Função para carregar os boletos da base de dados
-        window.carregarBoletos = function(filtrarVencidos = false, filtrarSemanal = false, filtroBusca = '') {
-            onValue(ref(database, 'boletos'), (snapshot) => {
-                const boletos = snapshot.val();
-                const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
-                tabelaBoletos.innerHTML = '';
-
-                if (!boletos) {
-                    alert('Nenhum boleto encontrado!');
-                    return;
-                }
-
-                for (const id in boletos) {
-                    const boleto = boletos[id];
-
-                    const row = tabelaBoletos.insertRow();
-                    row.dataset.id = id;
-
-                    row.insertCell(0).innerText = boleto.nomeCliente;
-                    row.insertCell(1).innerText = boleto.tso;
-                    row.insertCell(2).innerText = `R$ ${boleto.valorParcela}`;
-                    row.insertCell(3).innerText = boleto.valorPago ? `R$ ${boleto.valorPago}` : '-';
-                    row.insertCell(4).innerText = boleto.vencimento;
-                    row.insertCell(5).innerText = boleto.dataPagamento ? boleto.dataPagamento : '-';
-                    row.insertCell(6).innerText = boleto.status.charAt(0).toUpperCase() + boleto.status.slice(1);
-                    const acaoCell = row.insertCell(7);
-                    acaoCell.classList.add('acoes');
-
-                    const infoButton = document.createElement('button');
-                    infoButton.innerText = 'INFO';
-                    infoButton.onclick = () => abrirAbaFlutuante(id, boleto);
-                    acaoCell.appendChild(infoButton);
-
-                    const smsButton = document.createElement('button');
-                    smsButton.innerText = 'SMS';
-                    smsButton.onclick = () => abrirAbaSMS(id);
-                    acaoCell.appendChild(smsButton);
-
-                    const removerButton = document.createElement('button');
-                    removerButton.innerText = 'REMOVER';
-                    removerButton.onclick = () => removerBoleto(id);
-                    acaoCell.appendChild(removerButton);
-                }
-            });
-        };
-
-        // Função para abrir a aba SMS com o número do telefone
-        window.abrirAbaSMS = function(idBoleto) {
-            const boletoRef = ref(database, `boletos/${idBoleto}`);
-            onValue(boletoRef, (snapshot) => {
-                const boleto = snapshot.val();
-
-                console.log("Boleto recuperado:", boleto);
-
-                if (boleto && boleto.telefone) {
-                    const numeroCelular = adicionarDDI(boleto.telefone);
-
-                    console.log("Abrindo aba SMS com número:", numeroCelular);
-                    document.getElementById('smsNumero').innerText = numeroCelular;
-                } else {
-                    console.error(`Número de celular não encontrado para o boleto: ${idBoleto}`);
-                    document.getElementById('smsNumero').innerText = 'Número não disponível';
-                }
-
-                document.getElementById('abaSMS').style.display = 'block';
-            }, (error) => {
-                console.error('Erro ao recuperar o boleto:', error);
-            });
-        };
-
-        window.fecharAbaSMS = function() {
-            document.getElementById('abaSMS').style.display = 'none';
-        };
-
-        window.enviarSMSAvencer = function() {
-            const numero = document.getElementById('smsNumero').innerText;
-            if (numero !== 'Número não disponível') {
-                enviarSMS(numero, 'Seu boleto da OTICA VISTA LINDA vence essa semana. Caso tenha efetuado o pagamento, desconsidere esta mensagem.');
-            } else {
-                alert('Não é possível enviar SMS: número não disponível.');
-            }
-            fecharAbaSMS();
-        };
-
-        window.enviarSMSVencido = function() {
-            const numero = document.getElementById('smsNumero').innerText;
-            if (numero !== 'Número não disponível') {
-                enviarSMS(numero, 'Não identificamos o pagamento do seu boleto. OTICA VISTA LINDA.');
-            } else {
-                alert('Não é possível enviar SMS: número não disponível.');
-            }
-            fecharAbaSMS();
-        };
-
-        // Função para enviar SMS
-        async function enviarSMS(numero, mensagem) {
+        async function enviarSMS(numero, mensagem, idBoleto, tipo) {
             try {
                 const response = await fetch('/api/sendSMS', {
                     method: 'POST',
@@ -186,7 +65,124 @@
             }
         }
 
-        // Função para remover um boleto
+        window.carregarBoletos = function(filtrarVencidos = false, filtrarSemanal = false, filtroBusca = '') {
+            onValue(ref(database, 'boletos'), (snapshot) => {
+                const boletos = snapshot.val();
+                const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
+                tabelaBoletos.innerHTML = '';
+
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0);
+
+                const primeiroDiaDaSemana = new Date(hoje);
+                primeiroDiaDaSemana.setDate(hoje.getDate() - hoje.getDay() + 1); // Segunda-feira
+                const ultimoDiaDaSemana = new Date(primeiroDiaDaSemana);
+                ultimoDiaDaSemana.setDate(primeiroDiaDaSemana.getDate() + 6); // Domingo
+
+                for (const id in boletos) {
+                    const boleto = boletos[id];
+                    const vencimento = new Date(boleto.vencimento);
+
+                    if (filtrarVencidos && (vencimento >= hoje || boleto.status === 'pago')) {
+                        continue;
+                    }
+
+                    if (filtrarSemanal && (vencimento < primeiroDiaDaSemana || vencimento > ultimoDiaDaSemana)) {
+                        continue;
+                    }
+
+                    const nomeCliente = boleto.nomeCliente.toLowerCase();
+                    const tso = boleto.tso.toLowerCase();
+                    const filtroLowerCase = filtroBusca.toLowerCase();
+
+                    if (filtroBusca && !nomeCliente.includes(filtroLowerCase) && !tso.includes(filtroLowerCase)) {
+                        continue;
+                    }
+
+                    const row = tabelaBoletos.insertRow();
+                    row.dataset.id = id;
+
+                    row.insertCell(0).innerText = boleto.nomeCliente;
+                    row.insertCell(1).innerText = boleto.tso;
+                    row.insertCell(2).innerText = `R$ ${boleto.valorParcela}`;
+                    row.insertCell(3).innerText = boleto.valorPago ? `R$ ${boleto.valorPago}` : '-';
+                    row.insertCell(4).innerText = formatarData(boleto.vencimento);
+                    row.insertCell(5).innerText = boleto.dataPagamento ? formatarData(boleto.dataPagamento) : '-';
+                    row.insertCell(6).innerText = boleto.status.charAt(0).toUpperCase() + boleto.status.slice(1);
+                    const acaoCell = row.insertCell(7);
+                    acaoCell.classList.add('acoes');
+
+                    const infoButton = document.createElement('button');
+                    infoButton.innerText = 'INFO';
+                    infoButton.onclick = () => abrirAbaFlutuante(id, boleto);
+                    acaoCell.appendChild(infoButton);
+
+                    const smsButton = document.createElement('button');
+                    smsButton.innerText = 'SMS';
+                    smsButton.onclick = () => abrirAbaSMS(id);
+                    acaoCell.appendChild(smsButton);
+
+                    const removerButton = document.createElement('button');
+                    removerButton.innerText = 'REMOVER';
+                    removerButton.onclick = () => removerBoleto(id);
+                    acaoCell.appendChild(removerButton);
+                }
+            });
+        };
+
+        window.abrirAbaFlutuante = function(id, boleto) {
+            const abaFlutuante = document.getElementById('abaFlutuante');
+            document.getElementById('infoValorParcela').innerText = `Valor da Parcela: R$ ${boleto.valorParcela}`;
+            document.getElementById('inputValorPago').value = boleto.valorPago || '';
+            document.getElementById('inputDataPagamento').value = boleto.dataPagamento || '';
+
+            const salvarButton = document.getElementById('salvarBaixa');
+            salvarButton.onclick = () => salvarBaixa(id);
+
+            const reabrirButton = document.getElementById('reabrirParcela');
+            reabrirButton.onclick = () => reabrirParcela(id);
+
+            abaFlutuante.style.display = 'block';
+        };
+
+        window.fecharAbaFlutuante = function() {
+            document.getElementById('abaFlutuante').style.display = 'none';
+        };
+
+        window.salvarBaixa = function(id) {
+            const valorPago = document.getElementById('inputValorPago').value;
+            const dataPagamento = document.getElementById('inputDataPagamento').value;
+
+            const partesData = dataPagamento.split('/');
+            const dataFormatada = `${partesData[2]}-${partesData[1]}-${partesData[0]}`;
+
+            update(ref(database, 'boletos/' + id), {
+                valorPago,
+                dataPagamento: dataFormatada,
+                status: 'pago'
+            }).then(() => {
+                alert('Baixa salva com sucesso!');
+                fecharAbaFlutuante();
+                carregarBoletos();
+            }).catch((error) => {
+                alert('Erro ao salvar a baixa: ' + error.message);
+            });
+        };
+
+        window.reabrirParcela = function(id) {
+            update(ref(database, 'boletos/' + id), {
+                valorPago: null,
+                dataPagamento: null,
+                status: 'pendente'
+            }).then(() => {
+                alert('Parcela reaberta com sucesso!');
+                fecharAbaFlutuante();
+                carregarBoletos();
+            }).catch((error) => {
+                alert('Erro ao reabrir a parcela: ' + error.message);
+            });
+        };
+
         window.removerBoleto = function(id) {
             const confirmacao = confirm("Tem certeza de que deseja remover este boleto?");
             if (confirmacao) {
@@ -199,8 +195,59 @@
             }
         };
 
-        carregarBoletos(); // Carregar os boletos ao abrir a página
+        window.abrirAbaSMS = function(idBoleto) {
+            const boletoRef = ref(database, `boletos/${idBoleto}`);
+            onValue(boletoRef, (snapshot) => {
+                const boleto = snapshot.val();
+                const numeroCelular = adicionarDDI(boleto.telefone);
 
+                console.log("Abrindo aba SMS com número:", numeroCelular);
+
+                document.getElementById('smsNumero').innerText = numeroCelular;
+                document.getElementById('abaSMS').style.display = 'block';
+            });
+        };
+
+        window.fecharAbaSMS = function() {
+            document.getElementById('abaSMS').style.display = 'none';
+        };
+
+        window.enviarSMSAvencer = function() {
+            const numero = document.getElementById('smsNumero').innerText;
+            const idBoleto = document.querySelector('[data-id]').getAttribute('data-id');
+            if (numero !== 'Número não disponível') {
+                enviarSMS(numero, 'Seu boleto da OTICA VISTA LINDA vence essa semana. Caso tenha efetuado o pagamento, desconsidere esta mensagem. 2799600-0790', idBoleto, 'A Vencer');
+            } else {
+                alert('Não é possível enviar SMS: número não disponível.');
+            }
+            fecharAbaSMS();
+        };
+
+        window.enviarSMSVencido = function() {
+            const numero = document.getElementById('smsNumero').innerText;
+            const idBoleto = document.querySelector('[data-id]').getAttribute('data-id');
+            if (numero !== 'Número não disponível') {
+                enviarSMS(numero, 'Não identificamos o pagamento do seu boleto. OTICA VISTA LINDA 2799600-0790', idBoleto, 'Vencido');
+            } else {
+                alert('Não é possível enviar SMS: número não disponível.');
+            }
+            fecharAbaSMS();
+        };
+
+        window.filtrarBoletos = function() {
+            const filtroBusca = document.getElementById('inputBusca').value;
+            carregarBoletos(false, false, filtroBusca);
+        };
+
+        carregarBoletos();
+
+        window.filtrarVencidos = function() {
+            carregarBoletos(true);
+        };
+
+        window.filtrarSemanal = function() {
+            carregarBoletos(false, true);
+        };
     </script>
     <style>
         body {
@@ -208,6 +255,7 @@
             background-color: #f4f4f9;
             color: #333;
             margin: 0;
+            padding: 0;
             padding: 20px;
         }
 
@@ -226,19 +274,11 @@
             font-size: 14px;
             margin-right: 5px;
             transition: background-color 0.3s;
+            white-space: nowrap;
         }
 
         button:hover {
             background-color: #3700b3;
-        }
-
-        .top-buttons {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .top-buttons button {
-            margin: 5px;
         }
 
         table {
@@ -251,6 +291,7 @@
             border: 1px solid #ddd;
             padding: 10px;
             text-align: left;
+            white-space: nowrap;
         }
 
         th {
@@ -261,9 +302,10 @@
         .acoes {
             display: flex;
             gap: 5px;
+            flex-wrap: nowrap;
         }
 
-        #abaSMS {
+        #abaSMS, #abaFlutuante {
             display: none;
             position: fixed;
             top: 50%;
@@ -277,10 +319,36 @@
             border-radius: 8px;
         }
 
-        #abaSMS button {
+        #abaSMS button, #abaFlutuante button {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        #abaSMS button:hover, #abaFlutuante button:hover {
+            background-color: #45a049;
+        }
+
+        #fecharSMS, #fecharAbaFlutuante {
+            background-color: #f44336;
+        }
+
+        #fecharSMS:hover, #fecharAbaFlutuante:hover {
+            background-color: #e53935;
+        }
+
+        #inputValorPago, #inputDataPagamento, #inputBusca {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            border: 2px solid #ccc;
+            border-radius: 4px;
         }
 
         #smsNumero {
@@ -288,23 +356,42 @@
             padding: 8px;
             margin: 10px 0;
             box-sizing: border-box;
+            border: none;
             background-color: #f4f4f9;
             color: #666;
-            text-align: center;
             font-weight: bold;
+            text-align: center;
         }
 
+        .busca-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .busca-container input {
+            width: 300px;
+            padding: 10px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        .busca-container button {
+            padding: 10px 20px;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
     <h1>Boletos Cadastrados</h1>
 
-    <!-- Botões para filtrar boletos -->
-    <div class="top-buttons">
-        <button onclick="carregarBoletos()">Mostrar Todos os Boletos</button>
-        <button onclick="carregarBoletos(true)">Mostrar Boletos Vencidos</button>
-        <button onclick="carregarBoletos(false, true)">Mostrar Boletos Semanal</button>
+    <div class="busca-container">
+        <input type="text" id="inputBusca" placeholder="Buscar por nome ou TSO">
+        <button onclick="filtrarBoletos()">Buscar</button>
     </div>
+
+    <button onclick="carregarBoletos()">Mostrar Todos os Boletos</button>
+    <button onclick="filtrarVencidos()">Mostrar Boletos Vencidos</button>
+    <button onclick="filtrarSemanal()">Mostrar Semanal</button>
 
     <table id="tabelaBoletos">
         <thead>
@@ -316,7 +403,7 @@
                 <th>Vencimento</th>
                 <th>Data de Pagamento</th>
                 <th>Status</th>
-                <th>Ações</th>
+                <th>Ação</th>
             </tr>
         </thead>
         <tbody>
@@ -324,13 +411,24 @@
         </tbody>
     </table>
 
-    <!-- Aba de envio de SMS -->
+    <!-- Aba flutuante de SMS -->
     <div id="abaSMS">
         <h3>Enviar SMS</h3>
         <div id="smsNumero"></div>
         <button onclick="enviarSMSAvencer()">A VENCER</button>
         <button onclick="enviarSMSVencido()">VENCIDO</button>
-        <button onclick="fecharAbaSMS()">Cancelar</button>
+        <button id="fecharSMS" onclick="fecharAbaSMS()">Cancelar</button>
+    </div>
+
+    <!-- Aba flutuante de informações -->
+    <div id="abaFlutuante">
+        <h3>Informações do Boleto</h3>
+        <p id="infoValorParcela"></p>
+        <input type="text" id="inputValorPago" placeholder="Valor Pago">
+        <input type="text" id="inputDataPagamento" placeholder="Data de Pagamento (DD/MM/AAAA)">
+        <button id="salvarBaixa">Salvar Baixa</button>
+        <button id="reabrirParcela">Reabrir Parcela</button>
+        <button id="fecharAbaFlutuante" onclick="fecharAbaFlutuante()">Fechar</button>
     </div>
 </body>
 </html>

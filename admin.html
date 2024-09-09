@@ -73,6 +73,11 @@
                 const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
                 tabelaBoletos.innerHTML = '';
 
+                if (!boletos) {
+                    alert('Nenhum boleto encontrado!');
+                    return;
+                }
+
                 for (const id in boletos) {
                     const boleto = boletos[id];
 
@@ -227,6 +232,15 @@
             background-color: #3700b3;
         }
 
+        .top-buttons {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .top-buttons button {
+            margin: 5px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -284,6 +298,13 @@
 </head>
 <body>
     <h1>Boletos Cadastrados</h1>
+
+    <!-- Botões para filtrar boletos -->
+    <div class="top-buttons">
+        <button onclick="carregarBoletos()">Mostrar Todos os Boletos</button>
+        <button onclick="carregarBoletos(true)">Mostrar Boletos Vencidos</button>
+        <button onclick="carregarBoletos(false, true)">Mostrar Boletos Semanal</button>
+    </div>
 
     <table id="tabelaBoletos">
         <thead>

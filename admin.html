@@ -195,16 +195,25 @@
             }
         };
 
+        // Função para abrir a aba SMS e buscar o telefone
         window.abrirAbaSMS = function(idBoleto) {
             const boletoRef = ref(database, `boletos/${idBoleto}`);
             onValue(boletoRef, (snapshot) => {
                 const boleto = snapshot.val();
-                const numeroCelular = adicionarDDI(boleto.telefone);
+                
+                // Verifica se o telefone está presente no boleto
+                if (boleto && boleto.telefone) {
+                    const numeroCelular = adicionarDDI(boleto.telefone);
+                    console.log("Abrindo aba SMS com número:", numeroCelular);
+                    document.getElementById('smsNumero').innerText = numeroCelular;
+                } else {
+                    console.error(`Número de celular não encontrado para o boleto: ${idBoleto}`);
+                    document.getElementById('smsNumero').innerText = 'Número não disponível';
+                }
 
-                console.log("Abrindo aba SMS com número:", numeroCelular);
-
-                document.getElementById('smsNumero').innerText = numeroCelular;
                 document.getElementById('abaSMS').style.display = 'block';
+            }, (error) => {
+                console.error('Erro ao recuperar o boleto:', error);
             });
         };
 

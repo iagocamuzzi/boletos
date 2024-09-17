@@ -39,13 +39,14 @@
             return `55${numero}`;
         }
 
+        // Função corrigida para buscar o telefone com verificação de nomeCliente
         async function buscarTelefoneCliente(nomeCliente) {
             return new Promise((resolve) => {
                 const clientesRef = ref(database, 'clientes');
                 onValue(clientesRef, (snapshot) => {
                     const clientes = snapshot.val();
                     for (const id in clientes) {
-                        if (clientes[id].nomeCliente.toLowerCase() === nomeCliente.toLowerCase()) {
+                        if (clientes[id].nomeCliente && clientes[id].nomeCliente.toLowerCase() === nomeCliente.toLowerCase()) {
                             const numeroCelular = adicionarDDI(clientes[id].telefone);
                             resolve(numeroCelular);
                             return;
@@ -56,6 +57,7 @@
             });
         }
 
+        // Função para abrir a aba SMS e buscar o telefone do cliente
         window.abrirAbaSMS = async function(idBoleto) {
             const boletoRef = ref(database, `boletos/${idBoleto}`);
             onValue(boletoRef, async (snapshot) => {

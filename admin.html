@@ -20,6 +20,15 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
+        // Função para remover acentos e normalizar nome do cliente
+        function normalizarNome(nome) {
+            return nome
+                .normalize("NFD") // Decompõe caracteres com acentos
+                .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+                .toLowerCase() // Converte para minúsculas
+                .trim(); // Remove espaços em branco extras
+        }
+
         function formatarData(data) {
             const partes = data.split('-');
             if (partes.length === 3) {
@@ -40,13 +49,19 @@
             return `55${numero}`;
         }
 
+        // Função para buscar o telefone a partir do nome do cliente
         async function buscarTelefoneCliente(nomeCliente) {
-            const clientesRef = ref(database, 'clientes/' + nomeCliente);
+            const nomeNormalizado = normalizarNome(nomeCliente);
+
+            const clientesRef = ref(database, 'clientes/' + nomeNormalizado);
             const snapshot = await get(clientesRef);
+
             if (snapshot.exists()) {
                 return snapshot.val().telefone;
+            } else {
+                console.error(`Número de celular não encontrado para o cliente: ${nomeCliente}`);
+                return null;
             }
-            return null;
         }
 
         async function enviarSMS(numero, mensagem, idBoleto, tipo) {
@@ -207,7 +222,7 @@
             }
         };
 
-        window.abrirAbaSMS = function(idBoleto, telefone) {
+        window.abrirAbaSMS = async function(idBoleto, telefone) {
             if (!telefone) {
                 console.error('Número de celular não encontrado.');
                 alert('Número de celular não encontrado.');
@@ -263,7 +278,6 @@
         };
     </script>
     <style>
-        /* Estilos preservados */
         body {
             font-family: Arial, sans-serif;
             background-color: #f0f0f0;

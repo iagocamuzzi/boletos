@@ -45,14 +45,21 @@
                 const clientesRef = ref(database, 'clientes');
                 onValue(clientesRef, (snapshot) => {
                     const clientes = snapshot.val();
+                    let encontrado = false;
+                    
+                    console.log("Buscando telefone para o cliente:", nomeCliente);
                     for (const id in clientes) {
-                        if (clientes[id].nomeCliente && clientes[id].nomeCliente.toLowerCase() === nomeCliente.toLowerCase()) {
+                        if (clientes[id].nomeCliente && clientes[id].nomeCliente.toLowerCase().trim() === nomeCliente.toLowerCase().trim()) {
                             const numeroCelular = adicionarDDI(clientes[id].telefone);
+                            encontrado = true;
                             resolve(numeroCelular);
                             return;
                         }
                     }
-                    resolve(null); // Telefone não encontrado
+                    if (!encontrado) {
+                        console.warn("Telefone não encontrado para o cliente:", nomeCliente);
+                        resolve(null); // Telefone não encontrado
+                    }
                 });
             });
         }

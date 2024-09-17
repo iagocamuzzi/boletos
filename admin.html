@@ -159,7 +159,7 @@
             document.getElementById('abaSMS').style.display = 'none';
         };
 
-        function filtrarBoletos(filtro) {
+        window.filtrarBoletos = function(filtro) {
             if (filtro === 'todos') {
                 carregarBoletos();
             } else if (filtro === 'vencidos') {
@@ -167,7 +167,7 @@
             } else if (filtro === 'semanal') {
                 carregarBoletos(false, true);
             }
-        }
+        };
 
         carregarBoletos();
     </script>

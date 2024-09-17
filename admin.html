@@ -20,23 +20,7 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // Função para remover acentos e normalizar nome do cliente
-        function normalizarNome(nome) {
-            return nome
-                .normalize("NFD") // Decompõe caracteres com acentos
-                .replace(/[\u0300-\u036f]/g, "") // Remove acentos
-                .toLowerCase() // Converte para minúsculas
-                .trim(); // Remove espaços em branco extras
-        }
-
-        function formatarData(data) {
-            const partes = data.split('-');
-            if (partes.length === 3) {
-                return `${partes[2]}/${partes[1]}/${partes[0]}`;
-            }
-            return data;
-        }
-
+        // Função para normalizar o número de telefone e adicionar o DDI do Brasil (55)
         function adicionarDDI(numero) {
             if (!numero) {
                 console.error('Número de celular não definido.');
@@ -49,46 +33,25 @@
             return `55${numero}`;
         }
 
-        // Função para buscar o telefone a partir do nome do cliente
-        async function buscarTelefoneCliente(nomeCliente) {
-            const nomeNormalizado = normalizarNome(nomeCliente);
-
-            const clientesRef = ref(database, 'clientes/' + nomeNormalizado);
-            const snapshot = await get(clientesRef);
-
-            if (snapshot.exists()) {
-                return snapshot.val().telefone;
-            } else {
-                console.error(`Número de celular não encontrado para o cliente: ${nomeCliente}`);
-                return null;
-            }
-        }
-
-        async function enviarSMS(numero, mensagem, idBoleto, tipo) {
-            try {
-                const response = await fetch('/api/sendSMS', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ numero, mensagem })
+        // Função para buscar o telefone do cliente com base no nome do cliente
+        function buscarTelefoneCliente(nomeCliente) {
+            return new Promise((resolve, reject) => {
+                const clientesRef = ref(database, 'clientes');
+                onValue(clientesRef, (snapshot) => {
+                    const clientes = snapshot.val();
+                    for (const id in clientes) {
+                        if (clientes[id].nome === nomeCliente) {
+                            const telefone = clientes[id].telefone;
+                            resolve(telefone);
+                            return;
+                        }
+                    }
+                    reject('Número de celular não encontrado para o cliente: ' + nomeCliente);
                 });
-
-                const textResponse = await response.text();
-                console.log('Resposta recebida como texto:', textResponse);
-
-                try {
-                    const data = JSON.parse(textResponse);
-                    console.log('SMS enviado com sucesso:', data);
-                } catch (e) {
-                    console.error('Erro ao analisar JSON:', e);
-                    console.error('Resposta não é JSON válida:', textResponse);
-                }
-            } catch (error) {
-                console.error('Erro ao enviar SMS:', error);
-            }
+            });
         }
 
+        // Função para carregar boletos da base de dados
         window.carregarBoletos = function(filtrarVencidos = false, filtrarSemanal = false, filtroBusca = '') {
             onValue(ref(database, 'boletos'), async (snapshot) => {
                 const boletos = snapshot.val();
@@ -130,8 +93,8 @@
                     row.insertCell(1).innerText = boleto.tso;
                     row.insertCell(2).innerText = `R$ ${boleto.valorParcela}`;
                     row.insertCell(3).innerText = boleto.valorPago ? `R$ ${boleto.valorPago}` : '-';
-                    row.insertCell(4).innerText = formatarData(boleto.vencimento);
-                    row.insertCell(5).innerText = boleto.dataPagamento ? formatarData(boleto.dataPagamento) : '-';
+                    row.insertCell(4).innerText = boleto.vencimento;
+                    row.insertCell(5).innerText = boleto.dataPagamento || '-';
                     row.insertCell(6).innerText = boleto.status.charAt(0).toUpperCase() + boleto.status.slice(1);
                     const acaoCell = row.insertCell(7);
                     acaoCell.classList.add('acoes');
@@ -157,71 +120,7 @@
             });
         };
 
-        window.abrirAbaFlutuante = function(id, boleto) {
-            const abaFlutuante = document.getElementById('abaFlutuante');
-            document.getElementById('infoValorParcela').innerText = `Valor da Parcela: R$ ${boleto.valorParcela}`;
-            document.getElementById('inputValorPago').value = boleto.valorPago || '';
-            document.getElementById('inputDataPagamento').value = boleto.dataPagamento || '';
-
-            const salvarButton = document.getElementById('salvarBaixa');
-            salvarButton.onclick = () => salvarBaixa(id);
-
-            const reabrirButton = document.getElementById('reabrirParcela');
-            reabrirButton.onclick = () => reabrirParcela(id);
-
-            abaFlutuante.style.display = 'block';
-        };
-
-        window.fecharAbaFlutuante = function() {
-            document.getElementById('abaFlutuante').style.display = 'none';
-        };
-
-        window.salvarBaixa = function(id) {
-            const valorPago = document.getElementById('inputValorPago').value;
-            const dataPagamento = document.getElementById('inputDataPagamento').value;
-
-            const partesData = dataPagamento.split('/');
-            const dataFormatada = `${partesData[2]}-${partesData[1]}-${partesData[0]}`;
-
-            update(ref(database, 'boletos/' + id), {
-                valorPago,
-                dataPagamento: dataFormatada,
-                status: 'pago'
-            }).then(() => {
-                alert('Baixa salva com sucesso!');
-                fecharAbaFlutuante();
-                carregarBoletos();
-            }).catch((error) => {
-                alert('Erro ao salvar a baixa: ' + error.message);
-            });
-        };
-
-        window.reabrirParcela = function(id) {
-            update(ref(database, 'boletos/' + id), {
-                valorPago: null,
-                dataPagamento: null,
-                status: 'pendente'
-            }).then(() => {
-                alert('Parcela reaberta com sucesso!');
-                fecharAbaFlutuante();
-                carregarBoletos();
-            }).catch((error) => {
-                alert('Erro ao reabrir a parcela: ' + error.message);
-            });
-        };
-
-        window.removerBoleto = function(id) {
-            const confirmacao = confirm("Tem certeza de que deseja remover este boleto?");
-            if (confirmacao) {
-                remove(ref(database, 'boletos/' + id)).then(() => {
-                    alert('Boleto removido com sucesso!');
-                    carregarBoletos();
-                }).catch((error) => {
-                    alert('Erro ao remover o boleto: ' + error.message);
-                });
-            }
-        };
-
+        // Função para abrir aba SMS com o telefone do cliente
         window.abrirAbaSMS = async function(idBoleto, telefone) {
             if (!telefone) {
                 console.error('Número de celular não encontrado.');

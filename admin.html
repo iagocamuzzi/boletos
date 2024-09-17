@@ -159,6 +159,27 @@
             document.getElementById('abaSMS').style.display = 'none';
         };
 
+        // Função para enviar SMS
+        window.enviarSMSAvencer = function() {
+            const numero = document.getElementById('smsNumero').innerText;
+            if (numero !== 'Número não disponível') {
+                // Substitua aqui a lógica de envio do SMS com o texto para boletos a vencer
+                alert('SMS "A Vencer" enviado para: ' + numero);
+            } else {
+                alert('Não é possível enviar SMS: número não disponível.');
+            }
+        };
+
+        window.enviarSMSVencido = function() {
+            const numero = document.getElementById('smsNumero').innerText;
+            if (numero !== 'Número não disponível') {
+                // Substitua aqui a lógica de envio do SMS com o texto para boletos vencidos
+                alert('SMS "Vencido" enviado para: ' + numero);
+            } else {
+                alert('Não é possível enviar SMS: número não disponível.');
+            }
+        };
+
         window.filtrarBoletos = function(filtro) {
             if (filtro === 'todos') {
                 carregarBoletos();

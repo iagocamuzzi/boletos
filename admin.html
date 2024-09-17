@@ -153,40 +153,76 @@
             });
         };
 
-        window.abrirAbaSMS = async function(idBoleto, nomeCliente) {
-            const numeroCelular = await buscarTelefoneCliente(nomeCliente);
+        // Função para abrir aba com informações do boleto
+        window.abrirAbaFlutuante = function(id, boleto) {
+            const abaFlutuante = document.getElementById('abaFlutuante');
+            document.getElementById('infoValorParcela').innerText = `Valor da Parcela: R$ ${boleto.valorParcela}`;
+            document.getElementById('inputValorPago').value = boleto.valorPago || '';
+            document.getElementById('inputDataPagamento').value = boleto.dataPagamento || '';
 
-            if (numeroCelular) {
-                console.log("Abrindo aba SMS com número:", numeroCelular);
-                document.getElementById('smsNumero').innerText = numeroCelular;
-                document.getElementById('abaSMS').style.display = 'block';
-            } else {
-                alert('Número de celular não encontrado para o cliente: ' + nomeCliente);
-            }
+            const salvarButton = document.getElementById('salvarBaixa');
+            salvarButton.onclick = () => salvarBaixa(id);
+
+            const reabrirButton = document.getElementById('reabrirParcela');
+            reabrirButton.onclick = () => reabrirParcela(id);
+
+            abaFlutuante.style.display = 'block';
         };
 
-        window.enviarSMSAvencer = function() {
-            const numero = document.getElementById('smsNumero').innerText;
-            if (numero !== 'Número não disponível') {
-                enviarSMS(numero, 'Seu boleto da OTICA VISTA LINDA vence essa semana. Caso tenha efetuado o pagamento, desconsidere esta mensagem. 2799600-0790');
-            } else {
-                alert('Não é possível enviar SMS: número não disponível.');
-            }
-            fecharAbaSMS();
+        window.fecharAbaFlutuante = function() {
+            document.getElementById('abaFlutuante').style.display = 'none';
         };
 
-        window.enviarSMSVencido = function() {
-            const numero = document.getElementById('smsNumero').innerText;
-            if (numero !== 'Número não disponível') {
-                enviarSMS(numero, 'Não identificamos o pagamento do seu boleto. OTICA VISTA LINDA 2799600-0790');
-            } else {
-                alert('Não é possível enviar SMS: número não disponível.');
-            }
-            fecharAbaSMS();
+        window.salvarBaixa = function(id) {
+            const valorPago = document.getElementById('inputValorPago').value;
+            const dataPagamento = document.getElementById('inputDataPagamento').value;
+
+            const partesData = dataPagamento.split('/');
+            const dataFormatada = `${partesData[2]}-${partesData[1]}-${partesData[0]}`;
+
+            update(ref(database, 'boletos/' + id), {
+                valorPago,
+                dataPagamento: dataFormatada,
+                status: 'pago'
+            }).then(() => {
+                alert('Baixa salva com sucesso!');
+                fecharAbaFlutuante();
+                carregarBoletos();
+            }).catch((error) => {
+                alert('Erro ao salvar a baixa: ' + error.message);
+            });
+        };
+
+        window.reabrirParcela = function(id) {
+            update(ref(database, 'boletos/' + id), {
+                valorPago: null,
+                dataPagamento: null,
+                status: 'pendente'
+            }).then(() => {
+                alert('Parcela reaberta com sucesso!');
+                fecharAbaFlutuante();
+                carregarBoletos();
+            }).catch((error) => {
+                alert('Erro ao reabrir a parcela: ' + error.message);
+            });
         };
 
         window.fecharAbaSMS = function() {
             document.getElementById('abaSMS').style.display = 'none';
+        };
+
+        // Botões de filtro
+        window.filtrarBoletos = function() {
+            const filtroBusca = document.getElementById('inputBusca').value;
+            carregarBoletos(false, false, filtroBusca);
+        };
+
+        window.filtrarVencidos = function() {
+            carregarBoletos(true);
+        };
+
+        window.filtrarSemanal = function() {
+            carregarBoletos(false, true);
         };
 
         carregarBoletos();
@@ -271,6 +307,12 @@
 <body>
     <h1>Boletos Cadastrados</h1>
 
+    <div>
+        <button onclick="carregarBoletos()">Mostrar Todos os Boletos</button>
+        <button onclick="filtrarVencidos()">Mostrar Boletos Vencidos</button>
+        <button onclick="filtrarSemanal()">Mostrar Semanal</button>
+    </div>
+
     <table id="tabelaBoletos">
         <thead>
             <tr>
@@ -288,12 +330,24 @@
         </tbody>
     </table>
 
+    <!-- Aba flutuante de SMS -->
     <div id="abaSMS">
         <h3>Enviar SMS</h3>
         <div id="smsNumero"></div>
         <button onclick="enviarSMSAvencer()">A VENCER</button>
         <button onclick="enviarSMSVencido()">VENCIDO</button>
         <button onclick="fecharAbaSMS()">Cancelar</button>
+    </div>
+
+    <!-- Aba flutuante de informações -->
+    <div id="abaFlutuante">
+        <h3>Informações do Boleto</h3>
+        <p id="infoValorParcela"></p>
+        <input type="text" id="inputValorPago" placeholder="Valor Pago">
+        <input type="text" id="inputDataPagamento" placeholder="Data de Pagamento (DD/MM/AAAA)">
+        <button id="salvarBaixa">Salvar Baixa</button>
+        <button id="reabrirParcela">Reabrir Parcela</button>
+        <button id="fecharAbaFlutuante" onclick="fecharAbaFlutuante()">Fechar</button>
     </div>
 </body>
 </html>

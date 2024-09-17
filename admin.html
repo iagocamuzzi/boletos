@@ -20,7 +20,6 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // Função para formatar a data
         function formatarData(data) {
             const partes = data.split('-');
             if (partes.length === 3) {
@@ -29,27 +28,24 @@
             return data;
         }
 
-        // Função para adicionar o DDI ao telefone
         function adicionarDDI(numero) {
             if (!numero) {
                 console.error('Número de celular não definido.');
                 return 'Número não definido';
             }
-
             if (numero.startsWith('55')) {
                 return numero;
             }
             return `55${numero}`;
         }
 
-        // Função para buscar o telefone do cliente com base no nome
         async function buscarTelefoneCliente(nomeCliente) {
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 const clientesRef = ref(database, 'clientes');
                 onValue(clientesRef, (snapshot) => {
                     const clientes = snapshot.val();
                     for (const id in clientes) {
-                        if (clientes[id].nomeCliente === nomeCliente) {
+                        if (clientes[id].nomeCliente.toLowerCase() === nomeCliente.toLowerCase()) {
                             const numeroCelular = adicionarDDI(clientes[id].telefone);
                             resolve(numeroCelular);
                             return;
@@ -60,13 +56,12 @@
             });
         }
 
-        // Função para abrir a aba SMS e buscar o telefone do cliente
         window.abrirAbaSMS = async function(idBoleto) {
             const boletoRef = ref(database, `boletos/${idBoleto}`);
             onValue(boletoRef, async (snapshot) => {
                 const boleto = snapshot.val();
                 const numeroCelular = await buscarTelefoneCliente(boleto.nomeCliente);
-                
+
                 if (numeroCelular) {
                     console.log("Abrindo aba SMS com número:", numeroCelular);
                     document.getElementById('smsNumero').innerText = numeroCelular;
@@ -83,7 +78,6 @@
             document.getElementById('abaSMS').style.display = 'none';
         };
 
-        // Função para enviar SMS
         window.enviarSMSAvencer = function() {
             const numero = document.getElementById('smsNumero').innerText;
             if (numero !== 'Número não disponível') {
@@ -102,7 +96,6 @@
             }
         };
 
-        // Função para carregar boletos
         function carregarBoletos(filtrarVencidos = false, filtrarSemanal = false) {
             onValue(ref(database, 'boletos'), (snapshot) => {
                 const boletos = snapshot.val();
@@ -159,6 +152,16 @@
                 }
             });
         }
+
+        window.filtrarBoletos = function(filtro) {
+            if (filtro === 'todos') {
+                carregarBoletos();
+            } else if (filtro === 'vencidos') {
+                carregarBoletos(true, false);
+            } else if (filtro === 'semanal') {
+                carregarBoletos(false, true);
+            }
+        };
 
         carregarBoletos();
     </script>
@@ -246,10 +249,26 @@
             color: #666;
             text-align: center;
         }
+
+        .filter-buttons {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .filter-buttons button {
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <h1>Boletos Cadastrados</h1>
+
+    <div class="filter-buttons">
+        <button onclick="filtrarBoletos('todos')">Todos os Boletos</button>
+        <button onclick="filtrarBoletos('vencidos')">Boletos Vencidos</button>
+        <button onclick="filtrarBoletos('semanal')">Boletos Semanais</button>
+    </div>
 
     <table id="tabelaBoletos">
         <thead>

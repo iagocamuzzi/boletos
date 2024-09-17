@@ -153,20 +153,44 @@
             });
         };
 
-        // Função para abrir aba com informações do boleto
-        window.abrirAbaFlutuante = function(id, boleto) {
-            const abaFlutuante = document.getElementById('abaFlutuante');
-            document.getElementById('infoValorParcela').innerText = `Valor da Parcela: R$ ${boleto.valorParcela}`;
-            document.getElementById('inputValorPago').value = boleto.valorPago || '';
-            document.getElementById('inputDataPagamento').value = boleto.dataPagamento || '';
+        window.abrirAbaSMS = async function(idBoleto, nomeCliente) {
+            const numeroCelular = await buscarTelefoneCliente(nomeCliente);
 
-            const salvarButton = document.getElementById('salvarBaixa');
-            salvarButton.onclick = () => salvarBaixa(id);
+            if (numeroCelular) {
+                console.log("Abrindo aba SMS com número:", numeroCelular);
+                document.getElementById('smsNumero').innerText = numeroCelular;
+                document.getElementById('abaSMS').style.display = 'block';
+            } else {
+                alert('Número de celular não encontrado para o cliente: ' + nomeCliente);
+            }
+        };
 
-            const reabrirButton = document.getElementById('reabrirParcela');
-            reabrirButton.onclick = () => reabrirParcela(id);
+        window.fecharAbaSMS = function() {
+            document.getElementById('abaSMS').style.display = 'none';
+        };
 
-            abaFlutuante.style.display = 'block';
+        window.enviarSMSAvencer = function() {
+            const numero = document.getElementById('smsNumero').innerText;
+            if (numero !== 'Número não disponível') {
+                enviarSMS(numero, 'Seu boleto da OTICA VISTA LINDA vence essa semana. Caso tenha efetuado o pagamento, desconsidere esta mensagem. 2799600-0790');
+            } else {
+                alert('Não é possível enviar SMS: número não disponível.');
+            }
+            fecharAbaSMS();
+        };
+
+        window.enviarSMSVencido = function() {
+            const numero = document.getElementById('smsNumero').innerText;
+            if (numero !== 'Número não disponível') {
+                enviarSMS(numero, 'Não identificamos o pagamento do seu boleto. OTICA VISTA LINDA 2799600-0790');
+            } else {
+                alert('Não é possível enviar SMS: número não disponível.');
+            }
+            fecharAbaSMS();
+        };
+
+        window.fecharAbaSMS = function() {
+            document.getElementById('abaSMS').style.display = 'none';
         };
 
         window.fecharAbaFlutuante = function() {
@@ -207,8 +231,16 @@
             });
         };
 
-        window.fecharAbaSMS = function() {
-            document.getElementById('abaSMS').style.display = 'none';
+        window.removerBoleto = function(id) {
+            const confirmacao = confirm("Tem certeza de que deseja remover este boleto?");
+            if (confirmacao) {
+                remove(ref(database, 'boletos/' + id)).then(() => {
+                    alert('Boleto removido com sucesso!');
+                    carregarBoletos();
+                }).catch((error) => {
+                    alert('Erro ao remover o boleto: ' + error.message);
+                });
+            }
         };
 
         // Botões de filtro

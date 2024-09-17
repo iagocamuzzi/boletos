@@ -40,13 +40,20 @@
             return `55${numero}`;
         }
 
+        // Função para buscar o telefone a partir do nome do cliente
         async function buscarTelefoneCliente(nomeCliente) {
-            const clientesRef = ref(database, 'clientes/' + nomeCliente);
+            // Normalizando o nome do cliente para garantir que a busca no Firebase seja feita corretamente
+            const nomeFormatado = nomeCliente.toLowerCase().trim();
+
+            const clientesRef = ref(database, 'clientes/' + nomeFormatado);
             const snapshot = await get(clientesRef);
+
             if (snapshot.exists()) {
                 return snapshot.val().telefone;
+            } else {
+                console.error(`Número de celular não encontrado para o cliente: ${nomeCliente}`);
+                return null;
             }
-            return null;
         }
 
         async function enviarSMS(numero, mensagem, idBoleto, tipo) {
@@ -207,7 +214,7 @@
             }
         };
 
-        window.abrirAbaSMS = function(idBoleto, telefone) {
+        window.abrirAbaSMS = async function(idBoleto, telefone) {
             if (!telefone) {
                 console.error('Número de celular não encontrado.');
                 alert('Número de celular não encontrado.');
@@ -263,7 +270,6 @@
         };
     </script>
     <style>
-        /* Estilos preservados */
         body {
             font-family: Arial, sans-serif;
             background-color: #f0f0f0;

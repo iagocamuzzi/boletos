@@ -81,14 +81,31 @@
             });
         }
 
-        function carregarBoletos() {
+        function carregarBoletos(filtrarVencidos = false, filtrarSemanal = false) {
             onValue(ref(database, 'boletos'), (snapshot) => {
                 const boletos = snapshot.val();
                 const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
                 tabelaBoletos.innerHTML = '';
 
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0);
+
+                const primeiroDiaDaSemana = new Date(hoje);
+                primeiroDiaDaSemana.setDate(hoje.getDate() - hoje.getDay() + 1); // Segunda-feira
+                const ultimoDiaDaSemana = new Date(primeiroDiaDaSemana);
+                ultimoDiaDaSemana.setDate(primeiroDiaDaSemana.getDate() + 6); // Domingo
+
                 for (const id in boletos) {
                     const boleto = boletos[id];
+                    const vencimento = new Date(boleto.vencimento);
+
+                    if (filtrarVencidos && (vencimento >= hoje || boleto.status === 'pago')) {
+                        continue;
+                    }
+
+                    if (filtrarSemanal && (vencimento < primeiroDiaDaSemana || vencimento > ultimoDiaDaSemana)) {
+                        continue;
+                    }
 
                     const row = tabelaBoletos.insertRow();
                     row.dataset.id = id;
@@ -141,6 +158,16 @@
         window.fecharAbaSMS = function() {
             document.getElementById('abaSMS').style.display = 'none';
         };
+
+        function filtrarBoletos(filtro) {
+            if (filtro === 'todos') {
+                carregarBoletos();
+            } else if (filtro === 'vencidos') {
+                carregarBoletos(true, false);
+            } else if (filtro === 'semanal') {
+                carregarBoletos(false, true);
+            }
+        }
 
         carregarBoletos();
     </script>
@@ -228,10 +255,26 @@
             color: #666;
             text-align: center;
         }
+
+        .filter-buttons {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .filter-buttons button {
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <h1>Boletos Cadastrados</h1>
+
+    <div class="filter-buttons">
+        <button onclick="filtrarBoletos('todos')">Todos os Boletos</button>
+        <button onclick="filtrarBoletos('vencidos')">Boletos Vencidos</button>
+        <button onclick="filtrarBoletos('semanal')">Boletos Semanais</button>
+    </div>
 
     <table id="tabelaBoletos">
         <thead>

@@ -26,17 +26,16 @@
 
             if (clienteSnapshot.exists()) {
                 const cliente = clienteSnapshot.val();
-                let telefones = cliente.telefones || [];
+                let telefone = cliente.telefone;
 
-                // Se o telefone não estiver na lista, adicioná-lo
-                if (!telefones.includes(telefoneNovo)) {
-                    telefones.push(telefoneNovo);
-                    await update(clienteRef, { telefones });
+                // Se o telefone for diferente do atual, atualizar
+                if (telefone !== telefoneNovo) {
+                    await update(clienteRef, { telefone: telefoneNovo });
                     console.log("Telefone atualizado com sucesso.");
                 }
             } else {
                 // Se o cliente não existir, criar um novo com o telefone
-                await set(clienteRef, { telefones: [telefoneNovo] });
+                await set(clienteRef, { telefone: telefoneNovo });
                 console.log("Cliente e telefone adicionados com sucesso.");
             }
         }
@@ -49,8 +48,8 @@
 
                 if (clienteSnapshot.exists()) {
                     const cliente = clienteSnapshot.val();
-                    if (cliente.telefones && cliente.telefones.length > 0) {
-                        document.getElementById('telefoneCliente').value = cliente.telefones[0];
+                    if (cliente.telefone) {
+                        document.getElementById('telefoneCliente').value = cliente.telefone;
                     }
                 }
             }

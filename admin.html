@@ -45,8 +45,11 @@
             const snapshot = await get(clientesRef);
 
             const clientes = snapshot.val();
+            const nomeNormalizado = nomeCliente.toLowerCase().trim();
+            
             for (const id in clientes) {
-                if (clientes[id].nome && clientes[id].nome.toLowerCase().trim() === nomeCliente.toLowerCase().trim()) {
+                const nomeClienteAtual = clientes[id].nome?.toLowerCase().trim();
+                if (nomeClienteAtual === nomeNormalizado) {
                     return clientes[id].telefone;
                 }
             }
@@ -166,6 +169,18 @@
             document.getElementById('abaFlutuante').style.display = 'none';
         };
 
+        window.filtrarVencidos = function() {
+            carregarBoletos(true, false);
+        };
+
+        window.filtrarSemanal = function() {
+            carregarBoletos(false, true);
+        };
+
+        window.mostrarTodos = function() {
+            carregarBoletos(false, false);
+        };
+
         carregarBoletos();
     </script>
     <style>
@@ -243,10 +258,24 @@
             color: #666;
             text-align: center;
         }
+
+        .filtros {
+            margin-bottom: 20px;
+        }
+
+        .filtros button {
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
     <h1>Boletos Cadastrados</h1>
+    <div class="filtros">
+        <button onclick="mostrarTodos()">Mostrar Todos</button>
+        <button onclick="filtrarVencidos()">Mostrar Vencidos</button>
+        <button onclick="filtrarSemanal()">Mostrar Semanal</button>
+    </div>
+
     <table id="tabelaBoletos">
         <thead>
             <tr>

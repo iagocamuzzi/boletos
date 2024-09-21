@@ -7,6 +7,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        import Chart from 'https://cdn.jsdelivr.net/npm/chart.js';
 
         const firebaseConfig = {
             apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
@@ -20,57 +21,88 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
+        // Função para formatar números como moeda
         function formatarValor(valor) {
-            return parseFloat(valor.replace('R$', '').trim());
+            return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
-        function formatarParaReal(valor) {
-            return `R$ ${valor.toFixed(2).replace('.', ',')}`;
-        }
-
-        function carregarDashboard() {
-            const pagos = document.getElementById('pagos');
-            const vencidos = document.getElementById('vencidos');
-            const aVencer = document.getElementById('aVencer');
-
-            let totalPagos = 0;
-            let totalVencidos = 0;
-            let totalAVencer = 0;
-
-            const hoje = new Date();
-            const mesAtual = hoje.getMonth() + 1; // Mês atual (Janeiro = 0, por isso somamos 1)
-            const anoAtual = hoje.getFullYear();
-
+        // Função para carregar os dados e gerar os gráficos
+        function carregarDadosDashboard() {
             onValue(ref(database, 'boletos'), (snapshot) => {
                 const boletos = snapshot.val();
+                let totalPagos = 0, totalVencidos = 0, totalAVencer = 0;
+
+                const hoje = new Date();
+                const mesAtual = hoje.getMonth();
+                const anoAtual = hoje.getFullYear();
 
                 for (const id in boletos) {
                     const boleto = boletos[id];
-                    const valorParcela = formatarValor(boleto.valorParcela);
                     const vencimento = new Date(boleto.vencimento);
-                    const mesVencimento = vencimento.getMonth() + 1;
-                    const anoVencimento = vencimento.getFullYear();
+
+                    const valor = parseFloat(boleto.valorParcela.replace("R$", "").trim());
 
                     if (boleto.status === 'pago') {
-                        totalPagos += valorParcela;
-                    } else if (boleto.status === 'pendente') {
-                        if (vencimento < hoje) {
-                            totalVencidos += valorParcela;
-                        } else if (mesVencimento === mesAtual && anoVencimento === anoAtual) {
-                            totalAVencer += valorParcela;
-                        }
+                        totalPagos += valor;
+                    } else if (vencimento < hoje && boleto.status === 'pendente') {
+                        totalVencidos += valor;
+                    } else if (vencimento.getMonth() === mesAtual && vencimento.getFullYear() === anoAtual && boleto.status === 'pendente') {
+                        totalAVencer += valor;
                     }
                 }
 
-                pagos.innerText = formatarParaReal(totalPagos);
-                vencidos.innerText = formatarParaReal(totalVencidos);
-                aVencer.innerText = formatarParaReal(totalAVencer);
+                // Exibir valores no dashboard
+                document.getElementById('valorPagos').innerText = formatarValor(totalPagos);
+                document.getElementById('valorVencidos').innerText = formatarValor(totalVencidos);
+                document.getElementById('valorAVencer').innerText = formatarValor(totalAVencer);
+
+                // Atualizar gráfico
+                atualizarGrafico([totalPagos, totalVencidos, totalAVencer]);
             });
         }
 
-        window.onload = function() {
-            carregarDashboard();
-        };
+        // Função para atualizar o gráfico
+        function atualizarGrafico(dados) {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            const myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Pagos', 'Vencidos', 'A Vencer'],
+                    datasets: [{
+                        label: 'Valores de Boletos',
+                        data: dados,
+                        backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)', 'rgba(255, 206, 86, 0.2)'],
+                        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)', 'rgba(255, 206, 86, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Função para exportar relatório em CSV
+        function exportarCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Status, Valor\n";
+            csvContent += "Pagos, " + document.getElementById('valorPagos').innerText + "\n";
+            csvContent += "Vencidos, " + document.getElementById('valorVencidos').innerText + "\n";
+            csvContent += "A Vencer, " + document.getElementById('valorAVencer').innerText + "\n";
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "relatorio_boletos.csv");
+            document.body.appendChild(link);
+            link.click();
+        }
+
+        carregarDadosDashboard();
     </script>
     <style>
         body {
@@ -79,63 +111,82 @@
             color: #333;
             margin: 0;
             padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
         }
 
         h1 {
             text-align: center;
             margin-bottom: 20px;
-            font-size: 24px;
-            color: #6200ea;
-        }
-
-        .card {
-            background-color: #fff;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 10px;
-            width: 300px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-
-        .card h2 {
-            font-size: 36px;
-            color: #6200ea;
-        }
-
-        .card p {
-            font-size: 16px;
-            color: #666;
         }
 
         .dashboard-container {
             display: flex;
             justify-content: space-around;
-            width: 100%;
-            max-width: 1000px;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .dashboard-card {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 250px;
+        }
+
+        .dashboard-card h2 {
+            margin: 10px 0;
+        }
+
+        .dashboard-card span {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        canvas {
+            margin: 20px auto;
+            max-width: 80%;
+        }
+
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
         }
     </style>
 </head>
 <body>
     <h1>Dashboard de Boletos</h1>
+
     <div class="dashboard-container">
-        <div class="card">
-            <h2 id="pagos">R$ 0,00</h2>
-            <p>Pagos</p>
+        <div class="dashboard-card">
+            <h2>Pagos</h2>
+            <span id="valorPagos">R$ 0,00</span>
         </div>
-        <div class="card">
-            <h2 id="vencidos">R$ 0,00</h2>
-            <p>Vencidos</p>
+
+        <div class="dashboard-card">
+            <h2>Vencidos</h2>
+            <span id="valorVencidos">R$ 0,00</span>
         </div>
-        <div class="card">
-            <h2 id="aVencer">R$ 0,00</h2>
-            <p>A Vencer no Mês Atual</p>
+
+        <div class="dashboard-card">
+            <h2>A Vencer</h2>
+            <span id="valorAVencer">R$ 0,00</span>
         </div>
     </div>
+
+    <!-- Gráfico de barras -->
+    <canvas id="myChart"></canvas>
+
+    <!-- Botão para exportar relatório -->
+    <button onclick="exportarCSV()">Exportar Relatório CSV</button>
 </body>
 </html>

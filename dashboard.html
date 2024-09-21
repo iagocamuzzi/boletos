@@ -9,6 +9,7 @@
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
         import Chart from 'https://cdn.jsdelivr.net/npm/chart.js';
 
+        // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
             authDomain: "boletosvistalinda.firebaseapp.com",
@@ -18,6 +19,7 @@
             appId: "1:809943988538:web:4e25ccb03f5c940600f803"
         };
 
+        // Inicialização do Firebase
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
@@ -36,6 +38,7 @@
                 const mesAtual = hoje.getMonth();
                 const anoAtual = hoje.getFullYear();
 
+                // Calcula os valores pagos, vencidos e a vencer
                 for (const id in boletos) {
                     const boleto = boletos[id];
                     const vencimento = new Date(boleto.vencimento);
@@ -51,12 +54,12 @@
                     }
                 }
 
-                // Exibir valores no dashboard
+                // Exibe os valores calculados no dashboard
                 document.getElementById('valorPagos').innerText = formatarValor(totalPagos);
                 document.getElementById('valorVencidos').innerText = formatarValor(totalVencidos);
                 document.getElementById('valorAVencer').innerText = formatarValor(totalAVencer);
 
-                // Atualizar gráfico
+                // Atualiza o gráfico com os dados
                 atualizarGrafico([totalPagos, totalVencidos, totalAVencer]);
             });
         }

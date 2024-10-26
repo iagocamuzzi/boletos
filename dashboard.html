@@ -21,11 +21,11 @@
         const database = getDatabase(app);
 
         function formatarValor(valor) {
-            return parseFloat(valor.replace('R$', '').trim().replace(',', '.'));
+            return parseFloat(valor.replace('R$', '').trim().replace('.', '').replace(',', '.'));
         }
 
         function formatarParaReal(valor) {
-            return `R$ ${valor.toFixed(2).replace('.', ',')}`;
+            return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
         function carregarDashboard() {
@@ -40,7 +40,7 @@
             let totalJuros = 0;
 
             const hoje = new Date();
-            const mesAtual = hoje.getMonth() + 1; // Mês atual (Janeiro = 0, por isso somamos 1)
+            const mesAtual = hoje.getMonth() + 1;
             const anoAtual = hoje.getFullYear();
 
             onValue(ref(database, 'boletos'), (snapshot) => {
@@ -52,8 +52,7 @@
                     const vencimento = new Date(boleto.vencimento);
                     const mesVencimento = vencimento.getMonth() + 1;
                     const anoVencimento = vencimento.getFullYear();
-                    
-                    // Cálculo de juros caso o valor pago seja maior que o valor da parcela
+
                     if (boleto.valorPago) {
                         const valorPago = formatarValor(boleto.valorPago);
                         if (valorPago > valorParcela) {
@@ -61,7 +60,6 @@
                         }
                     }
 
-                    // Cálculos de pagamentos, vencidos e a vencer
                     if (boleto.status === 'pago') {
                         totalPagos += valorParcela;
                     } else if (boleto.status === 'pendente') {
@@ -87,7 +85,7 @@
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #f4f4f9;
+            background-color: #f0f2f5;
             color: #333;
             margin: 0;
             padding: 20px;
@@ -100,29 +98,37 @@
 
         h1 {
             text-align: center;
-            margin-bottom: 20px;
-            font-size: 24px;
-            color: #6200ea;
+            margin-bottom: 40px;
+            font-size: 2rem;
+            color: #4A4A4A;
         }
 
         .card {
             background-color: #fff;
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 20px;
             margin: 10px;
-            width: 300px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 280px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
             text-align: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
         }
 
         .card h2 {
-            font-size: 36px;
+            font-size: 2rem;
             color: #6200ea;
+            margin: 10px 0;
         }
 
         .card p {
-            font-size: 16px;
+            font-size: 1rem;
             color: #666;
+            margin-top: 0;
         }
 
         .dashboard-container {
@@ -130,7 +136,8 @@
             flex-wrap: wrap;
             justify-content: space-around;
             width: 100%;
-            max-width: 1000px;
+            max-width: 1200px;
+            gap: 20px;
         }
     </style>
 </head>
@@ -151,7 +158,7 @@
         </div>
         <div class="card">
             <h2 id="valorJuros">R$ 0,00</h2>
-            <p>Valor Juros</p>
+            <p>Valor de Juros</p>
         </div>
     </div>
 </body>

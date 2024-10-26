@@ -21,7 +21,7 @@
         const database = getDatabase(app);
 
         function formatarValor(valor) {
-            return parseFloat(valor.replace('R$', '').trim().replace('.', '').replace(',', '.'));
+            return parseFloat(valor.replace('R$', '').replace('.', '').replace(',', '.').trim());
         }
 
         function formatarParaReal(valor) {
@@ -53,15 +53,16 @@
                     const mesVencimento = vencimento.getMonth() + 1;
                     const anoVencimento = vencimento.getFullYear();
 
-                    if (boleto.valorPago) {
-                        const valorPago = formatarValor(boleto.valorPago);
-                        if (valorPago > valorParcela) {
-                            totalJuros += (valorPago - valorParcela);
-                        }
-                    }
-
                     if (boleto.status === 'pago') {
                         totalPagos += valorParcela;
+                        
+                        // Calcular juros apenas se houver diferença a mais no valor pago
+                        if (boleto.valorPago) {
+                            const valorPago = formatarValor(boleto.valorPago);
+                            if (valorPago > valorParcela) {
+                                totalJuros += (valorPago - valorParcela);
+                            }
+                        }
                     } else if (boleto.status === 'pendente') {
                         if (vencimento < hoje) {
                             totalVencidos += valorParcela;

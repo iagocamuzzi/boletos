@@ -20,7 +20,11 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // Função para formatar valores para reais
+        function formatarValor(valor) {
+            // Remove R$ e espaços, depois troca vírgula por ponto
+            return parseFloat(valor.replace('R$', '').replace(/\./g, '').replace(',', '.'));
+        }
+
         function formatarParaReal(valor) {
             return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
@@ -39,7 +43,7 @@
             let totalEmitido = 0;
 
             const hoje = new Date();
-            const mesAtual = hoje.getMonth() + 1; 
+            const mesAtual = hoje.getMonth() + 1;
             const anoAtual = hoje.getFullYear();
 
             onValue(ref(database, 'boletos'), (snapshot) => {
@@ -47,22 +51,20 @@
 
                 for (const id in boletos) {
                     const boleto = boletos[id];
-                    const valorParcela = parseFloat(boleto.valorParcela.replace('R$', '').replace('.', '').replace(',', '.')) || 0;
+                    const valorParcela = formatarValor(boleto.valorParcela);
                     totalEmitido += valorParcela;
 
                     const vencimento = new Date(boleto.vencimento);
                     const mesVencimento = vencimento.getMonth() + 1;
                     const anoVencimento = vencimento.getFullYear();
 
-                    // Calcular juros, caso o valor pago seja maior que o valor da parcela
                     if (boleto.valorPago) {
-                        const valorPago = parseFloat(boleto.valorPago.replace('R$', '').replace('.', '').replace(',', '.')) || 0;
+                        const valorPago = formatarValor(boleto.valorPago);
                         if (valorPago > valorParcela) {
                             totalJuros += (valorPago - valorParcela);
                         }
                     }
 
-                    // Cálculos de valores pagos, vencidos e a vencer
                     if (boleto.status === 'pago') {
                         totalPagos += valorParcela;
                     } else if (boleto.status === 'pendente') {

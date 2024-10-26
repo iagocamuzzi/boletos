@@ -21,7 +21,7 @@
         const database = getDatabase(app);
 
         function formatarValor(valor) {
-            return parseFloat(valor.replace('R$', '').trim().replace(',', '.'));
+            return parseFloat(valor.replace('R$', '').trim().replace('.', '').replace(',', '.'));
         }
 
         function formatarParaReal(valor) {
@@ -33,11 +33,13 @@
             const vencidos = document.getElementById('vencidos');
             const aVencer = document.getElementById('aVencer');
             const valorJuros = document.getElementById('valorJuros');
+            const taxaInadimplencia = document.getElementById('taxaInadimplencia');
 
             let totalPagos = 0;
             let totalVencidos = 0;
             let totalAVencer = 0;
             let totalJuros = 0;
+            let totalEmitido = 0;
 
             const hoje = new Date();
             const mesAtual = hoje.getMonth() + 1;
@@ -49,10 +51,13 @@
                 for (const id in boletos) {
                     const boleto = boletos[id];
                     const valorParcela = formatarValor(boleto.valorParcela);
+                    totalEmitido += valorParcela;
+
                     const vencimento = new Date(boleto.vencimento);
                     const mesVencimento = vencimento.getMonth() + 1;
                     const anoVencimento = vencimento.getFullYear();
 
+                    // Calcular juros, caso o valor pago seja maior que o valor da parcela
                     if (boleto.valorPago) {
                         const valorPago = formatarValor(boleto.valorPago);
                         if (valorPago > valorParcela) {
@@ -60,6 +65,7 @@
                         }
                     }
 
+                    // Cálculos de valores pagos, vencidos e a vencer
                     if (boleto.status === 'pago') {
                         totalPagos += valorParcela;
                     } else if (boleto.status === 'pendente') {
@@ -71,10 +77,13 @@
                     }
                 }
 
+                const inadimplencia = totalEmitido > 0 ? (totalVencidos / totalEmitido) * 100 : 0;
+
                 pagos.innerText = formatarParaReal(totalPagos);
                 vencidos.innerText = formatarParaReal(totalVencidos);
                 aVencer.innerText = formatarParaReal(totalAVencer);
                 valorJuros.innerText = formatarParaReal(totalJuros);
+                taxaInadimplencia.innerText = `${inadimplencia.toFixed(2)}%`;
             });
         }
 
@@ -128,7 +137,7 @@
             flex-wrap: wrap;
             justify-content: space-around;
             width: 100%;
-            max-width: 1000px;
+            max-width: 1200px;
         }
     </style>
 </head>
@@ -150,6 +159,10 @@
         <div class="card">
             <h2 id="valorJuros">R$ 0,00</h2>
             <p>Valor Juros</p>
+        </div>
+        <div class="card">
+            <h2 id="taxaInadimplencia">0,00%</h2>
+            <p>Taxa de Inadimplência</p>
         </div>
     </div>
 </body>

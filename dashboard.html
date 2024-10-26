@@ -21,7 +21,7 @@
         const database = getDatabase(app);
 
         function formatarValor(valor) {
-            return parseFloat(valor.replace('R$', '').trim().replace('.', '').replace(',', '.'));
+            return parseFloat(valor.replace('R$', '').trim().replace(',', '.'));
         }
 
         function formatarParaReal(valor) {
@@ -53,7 +53,6 @@
                     const mesVencimento = vencimento.getMonth() + 1;
                     const anoVencimento = vencimento.getFullYear();
 
-                    // Cálculo de juros se o valor pago for maior que o valor da parcela
                     if (boleto.valorPago) {
                         const valorPago = formatarValor(boleto.valorPago);
                         if (valorPago > valorParcela) {
@@ -61,7 +60,6 @@
                         }
                     }
 
-                    // Cálculo de totais para pagos, vencidos e a vencer
                     if (boleto.status === 'pago') {
                         totalPagos += valorParcela;
                     } else if (boleto.status === 'pendente') {

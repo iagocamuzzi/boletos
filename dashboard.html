@@ -21,7 +21,7 @@
         const database = getDatabase(app);
 
         function formatarValor(valor) {
-            return parseFloat(valor.replace('R$', '').trim());
+            return parseFloat(valor.replace('R$', '').trim().replace(',', '.'));
         }
 
         function formatarParaReal(valor) {
@@ -32,10 +32,12 @@
             const pagos = document.getElementById('pagos');
             const vencidos = document.getElementById('vencidos');
             const aVencer = document.getElementById('aVencer');
+            const valorJuros = document.getElementById('valorJuros');
 
             let totalPagos = 0;
             let totalVencidos = 0;
             let totalAVencer = 0;
+            let totalJuros = 0;
 
             const hoje = new Date();
             const mesAtual = hoje.getMonth() + 1; // Mês atual (Janeiro = 0, por isso somamos 1)
@@ -50,7 +52,16 @@
                     const vencimento = new Date(boleto.vencimento);
                     const mesVencimento = vencimento.getMonth() + 1;
                     const anoVencimento = vencimento.getFullYear();
+                    
+                    // Cálculo de juros caso o valor pago seja maior que o valor da parcela
+                    if (boleto.valorPago) {
+                        const valorPago = formatarValor(boleto.valorPago);
+                        if (valorPago > valorParcela) {
+                            totalJuros += (valorPago - valorParcela);
+                        }
+                    }
 
+                    // Cálculos de pagamentos, vencidos e a vencer
                     if (boleto.status === 'pago') {
                         totalPagos += valorParcela;
                     } else if (boleto.status === 'pendente') {
@@ -65,6 +76,7 @@
                 pagos.innerText = formatarParaReal(totalPagos);
                 vencidos.innerText = formatarParaReal(totalVencidos);
                 aVencer.innerText = formatarParaReal(totalAVencer);
+                valorJuros.innerText = formatarParaReal(totalJuros);
             });
         }
 
@@ -115,6 +127,7 @@
 
         .dashboard-container {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-around;
             width: 100%;
             max-width: 1000px;
@@ -135,6 +148,10 @@
         <div class="card">
             <h2 id="aVencer">R$ 0,00</h2>
             <p>A Vencer no Mês Atual</p>
+        </div>
+        <div class="card">
+            <h2 id="valorJuros">R$ 0,00</h2>
+            <p>Valor Juros</p>
         </div>
     </div>
 </body>

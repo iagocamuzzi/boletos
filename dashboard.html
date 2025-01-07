@@ -4,6 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Boletos</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "32c7568bbc8d079ea71d1dd1fa45a202dbcc20bb",
+            authDomain: "boletosvistalinda.firebaseapp.com",
+            projectId: "boletosvistalinda",
+            storageBucket: "boletosvistalinda.appspot.com",
+            messagingSenderId: "809943988538",
+            appId: "1:809943988538:web:4e25ccb03f5c940600f803"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        function formatarValor(valor) {
+            return parseFloat(valor.replace('R$', '').trim().replace(',', '.'));
+        }
+
+        function formatarParaReal(valor) {
+            return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function carregarDashboard() {
+            const pagos = document.getElementById('pagos');
+            const vencidos = document.getElementById('vencidos');
+            const aVencer = document.getElementById('aVencer');
+            const valorJuros = document.getElementById('valorJuros');
+
+            let totalPagos = 0;
+            let totalVencidos = 0;
+            let totalAVencer = 0;
+            let totalJuros = 0;
+
+            const hoje = new Date();
+            const mesAtual = hoje.getMonth() + 1;
+            const anoAtual = hoje.getFullYear();
+
+            onValue(ref(database, 'boletos'), (snapshot) => {
+                const boletos = snapshot.val();
+
+                for (const id in boletos) {
+                    const boleto = boletos[id];
+                    const valorParcela = formatarValor(boleto.valorParcela);
+                    const vencimento = new Date(boleto.vencimento);
+                    const mesVencimento = vencimento.getMonth() + 1;
+                    const anoVencimento = vencimento.getFullYear();
+
+                    if (boleto.valorPago) {
+                        const valorPago = formatarValor(boleto.valorPago);
+                        if (valorPago > valorParcela) {
+                            totalJuros += (valorPago - valorParcela);
+                        }
+                    }
+
+                    if (boleto.status === 'pago') {
+                        totalPagos += valorParcela;
+                    } else if (boleto.status === 'pendente') {
+                        if (vencimento < hoje) {
+                            totalVencidos += valorParcela;
+                        } else if (mesVencimento === mesAtual && anoVencimento === anoAtual) {
+                            totalAVencer += valorParcela;
+                        }
+                    }
+                }
+
+                pagos.innerText = formatarParaReal(totalPagos);
+                vencidos.innerText = formatarParaReal(totalVencidos);
+                aVencer.innerText = formatarParaReal(totalAVencer);
+                valorJuros.innerText = formatarParaReal(totalJuros);
+            });
+        }
+
+        window.onload = function() {
+            carregarDashboard();
+        };
+    </script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -14,6 +92,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
+            height: 100vh;
         }
 
         h1 {
@@ -38,28 +118,17 @@
             color: #6200ea;
         }
 
+        .card p {
+            font-size: 16px;
+            color: #666;
+        }
+
         .dashboard-container {
             display: flex;
             flex-wrap: wrap;
             justify-content: space-around;
             width: 100%;
             max-width: 1000px;
-        }
-
-        button {
-            background-color: #6200ea;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 20px;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #3700b3;
         }
     </style>
 </head>
@@ -83,12 +152,5 @@
             <p>Valor Juros</p>
         </div>
     </div>
-    <button onclick="abrirPesquisa()">Pesquisar Boletos</button>
-
-    <script>
-        function abrirPesquisa() {
-            window.open("pesquisar.html", "_blank");
-        }
-    </script>
 </body>
 </html>

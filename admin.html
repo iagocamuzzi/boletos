@@ -41,25 +41,42 @@
         }
 
         async function buscarTelefoneCliente(nomeCliente) {
-            const clienteRef = ref(database, 'clientes/' + nomeCliente);
-            const snapshot = await get(clienteRef);
+            const clientesRef = ref(database, 'clientes/' + nomeCliente);
+            const snapshot = await get(clientesRef);
             if (snapshot.exists()) {
                 return snapshot.val().telefone;
             }
             return null;
         }
 
-        async function carregarBoletos(filtrar = '') {
-            onValue(ref(database, 'boletos'), async (snapshot) => {
+        async function abrirWhatsApp(nomeCliente) {
+            const telefone = await buscarTelefoneCliente(nomeCliente);
+            if (telefone) {
+                const numeroFormatado = adicionarDDI(telefone);
+                const url = `https://wa.me/${numeroFormatado}`;
+                window.open(url, '_blank');
+            } else {
+                alert('Telefone não encontrado para este cliente.');
+            }
+        }
+
+        async function carregarBoletos(filtroBusca = '') {
+            onValue(ref(database, 'boletos'), (snapshot) => {
                 const boletos = snapshot.val();
                 const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
                 tabelaBoletos.innerHTML = '';
 
                 for (const id in boletos) {
                     const boleto = boletos[id];
-                    const filtroLower = filtrar.toLowerCase();
-                    if (filtrar && !boleto.nomeCliente.toLowerCase().includes(filtroLower) && !boleto.tso.toLowerCase().includes(filtroLower)) {
-                        continue;
+
+                    if (filtroBusca) {
+                        const nomeCliente = boleto.nomeCliente.toLowerCase();
+                        const tso = boleto.tso.toLowerCase();
+                        const filtroLowerCase = filtroBusca.toLowerCase();
+
+                        if (!nomeCliente.includes(filtroLowerCase) && !tso.includes(filtroLowerCase)) {
+                            continue;
+                        }
                     }
 
                     const row = tabelaBoletos.insertRow();
@@ -82,54 +99,24 @@
                     acaoCell.appendChild(infoButton);
 
                     const smsButton = document.createElement('button');
-                    smsButton.innerText = 'SMS';
-                    smsButton.onclick = async () => {
-                        const telefone = await buscarTelefoneCliente(boleto.nomeCliente);
-                        abrirAbaSMS(id, telefone);
-                    };
+                    smsButton.innerText = 'WhatsApp';
+                    smsButton.onclick = () => abrirWhatsApp(boleto.nomeCliente);
                     acaoCell.appendChild(smsButton);
-
-                    const removerButton = document.createElement('button');
-                    removerButton.innerText = 'REMOVER';
-                    removerButton.onclick = () => removerBoleto(id);
-                    acaoCell.appendChild(removerButton);
                 }
 
-                const botaoSituacao = document.getElementById('enviarSituacao');
-                botaoSituacao.style.display = filtrar ? 'block' : 'none';
+                const situacaoButton = document.getElementById('situacaoButton');
+                situacaoButton.style.display = filtroBusca ? 'block' : 'none';
             });
         }
 
-        window.enviarSituacao = async () => {
-            const tabelaBoletos = document.getElementById('tabelaBoletos').getElementsByTagName('tbody')[0];
-            const rows = tabelaBoletos.getElementsByTagName('tr');
-            if (rows.length === 0) {
-                alert('Nenhum boleto encontrado para enviar a situação.');
-                return;
-            }
-
-            for (const row of rows) {
-                const nomeCliente = row.cells[0].innerText;
-                const telefone = await buscarTelefoneCliente(nomeCliente);
-                if (telefone) {
-                    const mensagem = `Olá, informamos que sua situação é: ${row.cells[6].innerText}`;
-                    const url = `https://wa.me/${adicionarDDI(telefone)}?text=${encodeURIComponent(mensagem)}`;
-                    window.open(url, '_blank');
-                } else {
-                    console.error(`Telefone não encontrado para o cliente: ${nomeCliente}`);
-                }
-            }
+        window.filtrarBoletos = function () {
+            const filtroBusca = document.getElementById('inputBusca').value;
+            carregarBoletos(filtroBusca);
         };
-
-        document.getElementById('buscar').addEventListener('click', () => {
-            const busca = document.getElementById('inputBusca').value;
-            carregarBoletos(busca);
-        });
 
         carregarBoletos();
     </script>
     <style>
-        /* Estilos preservados */
         body {
             font-family: Arial, sans-serif;
             background-color: #f0f0f0;
@@ -184,9 +171,18 @@
             font-size: 16px;
         }
 
-        #enviarSituacao {
-            margin: 20px 0;
+        #situacaoButton {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
             display: none;
+        }
+
+        #situacaoButton:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
@@ -195,12 +191,8 @@
 
     <div class="busca-container">
         <input type="text" id="inputBusca" placeholder="Buscar por nome ou TSO">
-        <button id="buscar">Buscar</button>
+        <button onclick="filtrarBoletos()">Buscar</button>
     </div>
-
-    <button onclick="carregarBoletos()">Mostrar Todos os Boletos</button>
-    <button onclick="carregarBoletos(true)">Mostrar Boletos Vencidos</button>
-    <button onclick="carregarBoletos(false, true)">Mostrar Semanal</button>
 
     <table id="tabelaBoletos">
         <thead>
@@ -220,6 +212,6 @@
         </tbody>
     </table>
 
-    <button id="enviarSituacao" onclick="enviarSituacao()">Enviar Situação</button>
+    <button id="situacaoButton" onclick="alert('Função para enviar situação implementada aqui!')">Enviar Situação</button>
 </body>
 </html>

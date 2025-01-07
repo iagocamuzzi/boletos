@@ -49,16 +49,6 @@
             return null;
         }
 
-        async function enviarWhatsApp(telefone, mensagem) {
-            if (!telefone || telefone === 'Número não definido') {
-                alert('Número de celular não encontrado.');
-                return;
-            }
-
-            const url = `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`;
-            window.open(url, '_blank');
-        }
-
         async function carregarBoletos(filtrar = '') {
             onValue(ref(database, 'boletos'), async (snapshot) => {
                 const boletos = snapshot.val();
@@ -86,11 +76,23 @@
                     const acaoCell = row.insertCell(7);
                     acaoCell.classList.add('acoes');
 
-                    const whatsButton = document.createElement('button');
-                    whatsButton.innerText = 'WhatsApp';
-                    const telefone = await buscarTelefoneCliente(boleto.nomeCliente);
-                    whatsButton.onclick = () => enviarWhatsApp(adicionarDDI(telefone), `Olá, informamos que sua situação é: ${boleto.status}`);
-                    acaoCell.appendChild(whatsButton);
+                    const infoButton = document.createElement('button');
+                    infoButton.innerText = 'INFO';
+                    infoButton.onclick = () => abrirAbaFlutuante(id, boleto);
+                    acaoCell.appendChild(infoButton);
+
+                    const smsButton = document.createElement('button');
+                    smsButton.innerText = 'SMS';
+                    smsButton.onclick = async () => {
+                        const telefone = await buscarTelefoneCliente(boleto.nomeCliente);
+                        abrirAbaSMS(id, telefone);
+                    };
+                    acaoCell.appendChild(smsButton);
+
+                    const removerButton = document.createElement('button');
+                    removerButton.innerText = 'REMOVER';
+                    removerButton.onclick = () => removerBoleto(id);
+                    acaoCell.appendChild(removerButton);
                 }
 
                 const botaoSituacao = document.getElementById('enviarSituacao');
@@ -109,7 +111,13 @@
             for (const row of rows) {
                 const nomeCliente = row.cells[0].innerText;
                 const telefone = await buscarTelefoneCliente(nomeCliente);
-                enviarWhatsApp(adicionarDDI(telefone), `Olá, informamos que sua situação é: ${row.cells[6].innerText}`);
+                if (telefone) {
+                    const mensagem = `Olá, informamos que sua situação é: ${row.cells[6].innerText}`;
+                    const url = `https://wa.me/${adicionarDDI(telefone)}?text=${encodeURIComponent(mensagem)}`;
+                    window.open(url, '_blank');
+                } else {
+                    console.error(`Telefone não encontrado para o cliente: ${nomeCliente}`);
+                }
             }
         };
 
